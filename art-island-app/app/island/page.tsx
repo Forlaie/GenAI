@@ -32,15 +32,40 @@ interface IslandData {
 }
 
 const DEFAULT_PLANETS: IslandData[] = [
-  { id: 1, x: 18, y: 52, size: 160, color: "#EEEDFE", border: "#AFA9EC", label: "Planet Luminos" },
-  { id: 2, x: 50, y: 58, size: 130, color: "#E1F5EE", border: "#5DCAA5", label: "Planet Verdara" },
-  { id: 3, x: 78, y: 48, size: 110, color: "#FAEEDA", border: "#EF9F27", label: "Planet Solara" },
+  {
+    id: 1,
+    x: 18,
+    y: 52,
+    size: 160,
+    color: "#EEEDFE",
+    border: "#AFA9EC",
+    label: "Planet Luminos",
+  },
+  {
+    id: 2,
+    x: 50,
+    y: 58,
+    size: 130,
+    color: "#E1F5EE",
+    border: "#5DCAA5",
+    label: "Planet Verdara",
+  },
+  {
+    id: 3,
+    x: 78,
+    y: 48,
+    size: 110,
+    color: "#FAEEDA",
+    border: "#EF9F27",
+    label: "Planet Solara",
+  },
 ];
 
 export default function App() {
   const router = useRouter();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterData | null>(null);
+  const [selectedCharacter, setSelectedCharacter] =
+    useState<CharacterData | null>(null);
   const [modalState, setModalState] = useState<ModalState>("none");
   const [pendingDrawing, setPendingDrawing] = useState<string | null>(null);
   const [showNewIslandModal, setShowNewIslandModal] = useState(false);
@@ -55,16 +80,21 @@ export default function App() {
   const loadCharacters = async () => {
     try {
       const res = await fetch("/api/characters");
-      if (res.status === 401) { router.push("/login"); return; }
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setCharacters(data.map((char: any) => ({
-        id: char.id,
-        imageUrl: char.imageUrl,
-        name: char.name,
-        age: char.age,
-        position: char.position,
-      })));
+      setCharacters(
+        data.map((char: any) => ({
+          id: char.id,
+          imageUrl: char.imageUrl,
+          name: char.name,
+          age: char.age,
+          position: char.position,
+        })),
+      );
     } catch (error) {
       console.error("Error loading characters:", error);
     } finally {
@@ -89,7 +119,9 @@ export default function App() {
         const y1Px = (y / 100) * 700;
         const x2Px = (island.x / 100) * 1000;
         const y2Px = (island.y / 100) * 700;
-        const distance = Math.sqrt(Math.pow(x1Px - x2Px, 2) + Math.pow(y1Px - y2Px, 2));
+        const distance = Math.sqrt(
+          Math.pow(x1Px - x2Px, 2) + Math.pow(y1Px - y2Px, 2),
+        );
         return distance >= island.size / 2 + 70;
       });
       if (isFarEnough) return { x, y };
@@ -113,14 +145,31 @@ export default function App() {
     setNextIslandId((prev) => prev + 1);
   };
 
-  const getValidCharacterPosition = (): { x: number; y: number } => {
+  const getValidCharacterPosition = (
+    islandId?: number,
+  ): { x: number; y: number } => {
+    if (islandId) {
+      // Position character on the selected island
+      const island = islands.find((i) => i.id === islandId);
+      if (island) {
+        // Place character randomly within the island area
+        const radius = island.size / 3;
+        const angle = Math.random() * Math.PI * 2;
+        const distance = Math.random() * radius;
+        return {
+          x: island.x + (Math.cos(angle) * distance) / 10,
+          y: island.y + (Math.sin(angle) * distance) / 10,
+        };
+      }
+    }
+    // Default random position
     const minDistance = 8;
     for (let attempt = 0; attempt < 10; attempt++) {
       const x = Math.random() * 30 + 35;
       const y = 30 + Math.random() * 2;
       const isFarEnough = characters.every((char) => {
         const distance = Math.sqrt(
-          Math.pow(x - char.position.x, 2) + Math.pow(y - char.position.y, 2)
+          Math.pow(x - char.position.x, 2) + Math.pow(y - char.position.y, 2),
         );
         return distance >= minDistance;
       });
@@ -134,9 +183,14 @@ export default function App() {
     setModalState("upload");
   };
 
-  const handleAddCharacter = async (imageFile: File | null, name: string, age: number) => {
+  const handleAddCharacter = async (
+    imageFile: File | null,
+    name: string,
+    age: number,
+    islandId: number,
+  ) => {
     try {
-      const position = getValidCharacterPosition();
+      const position = getValidCharacterPosition(islandId);
 
       let imageUrl = pendingDrawing;
       if (!imageUrl && imageFile) {
@@ -197,7 +251,10 @@ export default function App() {
                 border: `2px solid ${planet.border}`,
               }}
             />
-            <p className="text-center text-xs font-medium mt-1" style={{ color: "#888780" }}>
+            <p
+              className="text-center text-xs font-medium mt-1"
+              style={{ color: "#888780" }}
+            >
               {planet.label}
             </p>
           </div>
@@ -246,20 +303,29 @@ export default function App() {
 
       {/* Title */}
       <div className="fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 text-center z-10 px-4">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-800">Planet Pals</h1>
-        <p className="text-gray-400 text-xs sm:text-sm mt-1">Where your drawings come to life</p>
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-800">
+          Planet Pals
+        </h1>
+        <p className="text-gray-400 text-xs sm:text-sm mt-1">
+          Where your drawings come to life
+        </p>
       </div>
 
       {characters.length === 0 && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center px-4">
-          <p className="text-lg text-gray-300">Click "Add Drawing" to place your character on a planet</p>
+          <p className="text-lg text-gray-300">
+            Click "Add Drawing" to place your character on a planet
+          </p>
         </div>
       )}
 
       {/* Modals */}
       <AnimatePresence>
         {selectedCharacter && (
-          <CharacterDetail {...selectedCharacter} onClose={() => setSelectedCharacter(null)} />
+          <CharacterDetail
+            {...selectedCharacter}
+            onClose={() => setSelectedCharacter(null)}
+          />
         )}
 
         {modalState === "choose" && (
@@ -293,6 +359,7 @@ export default function App() {
             }}
             onSubmit={handleAddCharacter}
             previewImageUrl={pendingDrawing ?? undefined}
+            islands={islands}
           />
         )}
 

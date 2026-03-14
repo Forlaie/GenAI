@@ -4,21 +4,34 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Camera, Upload, X } from "lucide-react";
 
+interface IslandData {
+  id: number;
+  label: string;
+}
+
 interface UploadModalProps {
   onClose: () => void;
-  onSubmit: (imageFile: File | null, name: string, age: number) => void;
+  onSubmit: (
+    imageFile: File | null,
+    name: string,
+    age: number,
+    islandId: number,
+  ) => void;
   previewImageUrl?: string;
+  islands: IslandData[];
 }
 
 export function UploadModal({
   onClose,
   onSubmit,
   previewImageUrl,
+  islands,
 }: UploadModalProps) {
   const [imageUrl, setImageUrl] = useState<string>(previewImageUrl || "");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
+  const [selectedIslandId, setSelectedIslandId] = useState(islands[0]?.id || 1);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -33,7 +46,7 @@ export function UploadModal({
     e.preventDefault();
     // Allow submission if we have an image (either from file or preview) and required fields
     if ((imageFile || previewImageUrl) && name && age) {
-      onSubmit(imageFile, name, parseInt(age));
+      onSubmit(imageFile, name, parseInt(age), selectedIslandId);
       onClose();
     }
   };
@@ -149,6 +162,27 @@ export function UploadModal({
               max="99"
               required
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="island"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Choose Island
+            </label>
+            <select
+              id="island"
+              value={selectedIslandId}
+              onChange={(e) => setSelectedIslandId(parseInt(e.target.value))}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none bg-white"
+            >
+              {islands.map((island) => (
+                <option key={island.id} value={island.id}>
+                  {island.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <button
