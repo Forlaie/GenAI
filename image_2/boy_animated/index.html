@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Character Animator</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0ece4;--ground:#c8b89a;--gl:#a89070;--text:#2a2016;--accent:#e8622a;--bb:#2a2016;--bt:#f0ece4}
+body{font-family:'Space Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem}
+h1{font-size:1rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-bottom:1.5rem;opacity:.5}
+.stage{width:100%;max-width:800px;height:380px;position:relative;overflow:hidden;border-radius:4px;border:1.5px solid var(--gl);background:linear-gradient(to bottom,#d4e8f7 0%,#eee8de 68%,var(--ground) 68%)}
+.gline{position:absolute;bottom:80px;left:0;right:0;height:2px;background:var(--gl)}
+.gline::after{content:'';position:absolute;top:2px;left:0;right:0;height:40px;background:repeating-linear-gradient(90deg,transparent,transparent 38px,rgba(0,0,0,.07) 38px,rgba(0,0,0,.07) 40px)}
+#char{position:absolute;bottom:82px;left:50%;transform:translateX(-50%)}
+.part{position:absolute;transform-origin:var(--px) var(--py)}
+.part img{display:block;width:100%;height:100%}
+#shadow{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);width:60px;height:10px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.18) 0%,transparent 70%)}
+.ctrls{margin-top:1.2rem;display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;max-width:800px}
+.btn{font-family:'Space Mono',monospace;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:.45rem .9rem;border:1.5px solid var(--bb);background:transparent;color:var(--bb);cursor:pointer;border-radius:2px;transition:background .12s,color .12s}
+.btn:hover{background:var(--bb);color:var(--bt)}
+.btn.active{border-color:var(--accent);background:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<h1>Character Animator</h1>
+<div class="stage" id="stage">
+  <div class="gline"></div>
+  <div id="shadow"></div>
+  <div id="char"></div>
+</div>
+<div class="ctrls" id="btns"></div>
+<script>
+const RIG={
+  "character": {
+    "width": 262,
+    "height": 448
+  },
+  "parts": {
+    "head": {
+      "file": "parts/head.png",
+      "x": 0,
+      "y": 0,
+      "width": 262,
+      "height": 219,
+      "pivot_x": 131,
+      "pivot_y": 219,
+      "z": 6
+    },
+    "torso": {
+      "file": "parts/torso.png",
+      "x": 57,
+      "y": 213,
+      "width": 146,
+      "height": 113,
+      "pivot_x": 73,
+      "pivot_y": 0,
+      "z": 4
+    },
+    "arm_left": {
+      "file": "parts/arm_left.png",
+      "x": 0,
+      "y": 239,
+      "width": 75,
+      "height": 81,
+      "pivot_x": 75,
+      "pivot_y": 0,
+      "z": 2
+    },
+    "arm_right": {
+      "file": "parts/arm_right.png",
+      "x": 185,
+      "y": 239,
+      "width": 77,
+      "height": 81,
+      "pivot_x": 0,
+      "pivot_y": 0,
+      "z": 2
+    },
+    "leg_left": {
+      "file": "parts/leg_left.png",
+      "x": 0,
+      "y": 320,
+      "width": 137,
+      "height": 128,
+      "pivot_x": 109,
+      "pivot_y": 0,
+      "z": 1
+    },
+    "leg_right": {
+      "file": "parts/leg_right.png",
+      "x": 125,
+      "y": 320,
+      "width": 137,
+      "height": 128,
+      "pivot_x": 27,
+      "pivot_y": 0,
+      "z": 1
+    }
+  }
+};
+const A={
+  idle:{l:"Idle",fn(t){const b=Math.sin(t*2)*2,s=Math.sin(t*1.2)*1.5;return{head:{ty:b,r:s*.5},torso:{ty:b,r:s*.3},arm_left:{r:-8+Math.sin(t*1.8)*4,ty:b},arm_right:{r:8+Math.sin(t*1.8+Math.PI)*4,ty:b},leg_left:{r:2,ty:b},leg_right:{r:-2,ty:b}}}},
+  walk:{l:"Walk",walk:true,spd:120,fn(t){const p=t*Math.PI*2*1.8,b=Math.abs(Math.sin(p))*-4,s=28;return{head:{ty:b,r:Math.sin(p)*2},torso:{ty:b,r:Math.sin(p)*3},arm_left:{r:Math.sin(p)*s*.7,ty:b},arm_right:{r:Math.sin(p+Math.PI)*s*.7,ty:b},leg_left:{r:Math.sin(p)*s,ty:b},leg_right:{r:Math.sin(p+Math.PI)*s,ty:b}}}},
+  run:{l:"Run",walk:true,spd:260,fn(t){const p=t*Math.PI*2*3.2,b=Math.abs(Math.sin(p))*-8,s=44;return{head:{ty:b,r:Math.sin(p)*4},torso:{ty:b,r:Math.sin(p)*5},arm_left:{r:Math.sin(p+Math.PI)*s,ty:b},arm_right:{r:Math.sin(p)*s,ty:b},leg_left:{r:Math.sin(p)*s*1.2,ty:b},leg_right:{r:Math.sin(p+Math.PI)*s*1.2,ty:b}}}},
+  wave:{l:"Wave",fn(t){const b=Math.sin(t*2)*2,w=Math.sin(t*6)*35-55;return{head:{ty:b,r:Math.sin(t*2)*5},torso:{ty:b},arm_left:{r:-10,ty:b},arm_right:{r:w,ty:b},leg_left:{r:4,ty:b},leg_right:{r:-4,ty:b}}}},
+  bounce:{l:"Bounce",fn(t){const p=t*Math.PI*2*2,sq=Math.max(0,Math.sin(p)),ty=-sq*30,sX=1+sq*.06;return{head:{ty,sX},torso:{ty,sX},arm_left:{ty,r:Math.sin(p)*20},arm_right:{ty,r:-Math.sin(p)*20},leg_left:{ty:ty*.5,r:Math.sin(p)*10},leg_right:{ty:ty*.5,r:-Math.sin(p)*10}}}},
+  dance:{l:"Dance",fn(t){const p=t*Math.PI*2*1.4,h=Math.abs(Math.sin(p))*-15,s=Math.sin(p)*12,n=Math.sin(p*2)*20;return{head:{r:s*.6,ty:h},torso:{r:s*.4,ty:h},arm_left:{r:-40+n,ty:h},arm_right:{r:40-n,ty:h},leg_left:{r:s*.8,ty:h*.5},leg_right:{r:-s*.8,ty:h*.5}}}},
+  jump:{l:"Jump",fn(t){const ph=(t%1.2)/1.2,arc=Math.sin(ph*Math.PI)*-70,tk=ph>.2&&ph<.8,lr=tk?30:0,ar=tk?-80:10;return{head:{ty:arc},torso:{ty:arc},arm_left:{r:ar,ty:arc},arm_right:{r:-ar,ty:arc},leg_left:{r:lr,ty:arc},leg_right:{r:-lr,ty:arc}}}},
+  spin:{l:"Spin",fn(t){const sX=Math.cos(t*Math.PI*2*.8);return{head:{sX},torso:{sX},arm_left:{sX},arm_right:{sX},leg_left:{sX},leg_right:{sX}}}},
+};
+const charEl=document.getElementById('char'),shadow=document.getElementById('shadow'),stage=document.getElementById('stage');
+const cH=RIG.character.height,cW=RIG.character.width,sc=Math.min(230/cH,330/cW,1);
+charEl.style.cssText=`width:${cW*sc}px;height:${cH*sc}px`;
+const sorted=Object.entries(RIG.parts).sort((a,b)=>a[1].z-b[1].z);
+const pels={};
+for(const[n,p]of sorted){
+  const el=document.createElement('div');
+  el.className='part';el.id='p-'+n;
+  const pw=(p.pivot_x/p.width*100).toFixed(1),ph=(p.pivot_y/p.height*100).toFixed(1);
+  el.style.cssText=`left:${p.x*sc}px;top:${p.y*sc}px;width:${p.width*sc}px;height:${p.height*sc}px;--px:${pw}%;--py:${ph}%;z-index:${p.z}`;
+  const img=document.createElement('img');img.src=p.file;img.draggable=false;
+  el.appendChild(img);charEl.appendChild(el);pels[n]=el;
+}
+const bc=document.getElementById('btns');
+let cur='idle',cx=-1,dir=1;
+// Always read offsetWidth fresh — avoids stale value at parse time
+function sw(){return stage.offsetWidth}
+for(const[k,a]of Object.entries(A)){
+  const b=document.createElement('button');
+  b.className='btn'+(k==='idle'?' active':'');b.textContent=a.l;b.dataset.k=k;
+  b.addEventListener('click',()=>{
+    cur=k;dir=1;
+    // Clamp cx into current stage bounds immediately
+    const hw=cW*sc/2;
+    cx=Math.max(hw+20, Math.min(sw()-hw-20, cx<0?sw()/2:cx));
+    document.querySelectorAll('.btn').forEach(x=>x.classList.toggle('active',x.dataset.k===k));
+  });
+  bc.appendChild(b);
+}
+function pose(p){
+  for(const[n,el]of Object.entries(pels)){
+    const v=p[n]||{};
+    el.style.transform=`translateX(${v.tx||0}px) translateY(${v.ty||0}px) rotate(${v.r||0}deg) scaleX(${v.sX||1})`;
+  }
+}
+let t0=null;
+function tick(ts){
+  // Init cx on first frame so offsetWidth is definitely ready
+  if(!t0){t0=ts;cx=sw()/2}
+  const t=(ts-t0)/1000,dt=Math.min((ts-(tick._l??ts))/1000,.05);
+  tick._l=ts;
+  const a=A[cur]; pose(a.fn(t,dir));
+  if(a.walk){
+    cx+=dir*a.spd*dt;
+    const hw=cW*sc/2, W=sw();
+    // Bounce off walls with a margin of one character-half-width
+    if(cx>W-hw)  {cx=W-hw;  dir=-1;}
+    if(cx<hw)    {cx=hw;    dir= 1;}
+    charEl.style.transform=`translateX(calc(${cx}px - 50%)) scaleX(${dir<0?-1:1})`;
+    shadow.style.left=cx+'px';
+  } else {
+    charEl.style.transform='translateX(-50%)';shadow.style.left='50%';
+  }
+  shadow.style.width=(50+Math.sin(t*4)*5)+'px';
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
