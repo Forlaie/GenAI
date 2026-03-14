@@ -134,15 +134,16 @@ export function Minimap({ islands, characters, panX, panY }: MinimapProps) {
 
         {/* Viewport indicator - shows current view */}
         <div
-          className="absolute border-2 border-purple-500 opacity-70"
+          className="absolute rounded-full"
           style={{
-            left: (-panX - minX) * scaleX,
-            top: (-panY - minY) * scaleY,
-            width: window.innerWidth * scaleX,
-            height: window.innerHeight * scaleY,
-            borderRadius: "2px",
+            left: (-panX - minX) * scaleX - 4,
+            top: (-panY - minY) * scaleY - 4,
+            width: 8,
+            height: 8,
+            backgroundColor: "#A855F7",
+            border: "1px solid #7C3AED",
             pointerEvents: "none",
-            boxShadow: "inset 0 0 0 1px rgba(168, 85, 247, 0.5)",
+            opacity: 0.8,
           }}
         />
       </div>
