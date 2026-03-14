@@ -1,4 +1,33 @@
 @import "tailwindcss";
+@import "./theme.css";
+
+:root {
+  --tower-scale: 1;
+}
+
+@media (max-width: 640px) {
+  :root {
+    --tower-scale: 0.5;
+  }
+}
+
+@media (max-width: 768px) {
+  :root {
+    --tower-scale: 0.7;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --tower-scale: 1.2;
+  }
+}
+
+@media (min-width: 1792px) {
+  :root {
+    --tower-scale: 1.5;
+  }
+}
 
 @layer base {
   body {
@@ -16,4 +45,26 @@
 .size-full {
   width: 100%;
   height: 100vh;
+}
+
+/* Star movement animation */
+@keyframes starDrift {
+  0% {
+    transform: translateX(-10vw);
+    opacity: 0;
+  }
+  5% {
+    opacity: 1;
+  }
+  95% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(110vw);
+    opacity: 0;
+  }
+}
+
+.animate-star-drift {
+  animation: starDrift 120s linear infinite;
 }
