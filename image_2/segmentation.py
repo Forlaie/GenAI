@@ -26,7 +26,7 @@ from PIL import Image
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG — edit these
 # ─────────────────────────────────────────────────────────────────────────────
-IMAGE_PATH      = "stick.png"        # your drawing
+IMAGE_PATH      = ".png"        # your drawing
 SAM_CHECKPOINT  = "sam_vit_b_01ec64.pth"
 SAM_MODEL_TYPE  = "vit_b"
 DEVICE          = "cpu"              # "cuda" if you have a GPU
@@ -239,43 +239,207 @@ def detect_keypoints(image_rgb: np.ndarray) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# STEP 3 — Segment body parts with SAM
+# STEP 3 — Segment body parts via anatomical zone splitting
+#
+# WHY NOT SAM ALONE:
+#   Stick figures are connected strokes with no region boundaries.
+#   SAM point-prompts bleed across the whole figure.
+#   Solution: divide the character bounding-box into proportional zones,
+#   intersect with char_mask, then optionally refine with SAM box-prompts.
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Anatomical zones as (y_start, y_end, x_start, x_end) fractions of the
+# character bounding box.  (0,0) = top-left of bbox.
+#
+#   y:  0.00 ──── 0.22  head
+#       0.22 ──── 0.58  torso + arms
+#       0.58 ──── 1.00  legs
+#   x:  0.00 ──── 0.50  left side
+#       0.50 ──── 1.00  right side
+#
+# Arms extend slightly above the torso band to catch the shoulder.
+ZONE_FRACTIONS = {
+    "head":       (0.00, 0.24, 0.15, 0.85),   # (y0, y1, x0, x1)
+    "torso":      (0.22, 0.60, 0.25, 0.75),
+    "left_arm":   (0.18, 0.62, 0.00, 0.45),
+    "right_arm":  (0.18, 0.62, 0.55, 1.00),
+    "left_leg":   (0.56, 1.00, 0.00, 0.50),
+    "right_leg":  (0.56, 1.00, 0.50, 1.00),
+}
+
+# How much to dilate each zone mask (px) before intersecting — helps capture
+# thin strokes that sit right on zone borders.
+ZONE_DILATION = 6
+
+
+def _character_bbox(char_mask: np.ndarray):
+    """Return (rmin, rmax, cmin, cmax) of the character mask."""
+    rows = np.any(char_mask > 0, axis=1)
+    cols = np.any(char_mask > 0, axis=0)
+    rmin, rmax = int(np.where(rows)[0][[0, -1]].tolist()[0]), \
+                 int(np.where(rows)[0][[0, -1]].tolist()[1])
+    cmin, cmax = int(np.where(cols)[0][[0, -1]].tolist()[0]), \
+                 int(np.where(cols)[0][[0, -1]].tolist()[1])
+    return rmin, rmax, cmin, cmax
+
+
+def _zone_mask(char_mask: np.ndarray, fracs: tuple,
+               rmin: int, rmax: int, cmin: int, cmax: int) -> np.ndarray:
+    """
+    Build a boolean mask covering only the zone defined by fracs,
+    then intersect with char_mask.
+    """
+    H, W = char_mask.shape
+    bh   = rmax - rmin
+    bw   = cmax - cmin
+
+    fy0, fy1, fx0, fx1 = fracs
+    r0 = max(0, rmin + int(fy0 * bh))
+    r1 = min(H - 1, rmin + int(fy1 * bh))
+    c0 = max(0, cmin + int(fx0 * bw))
+    c1 = min(W - 1, cmin + int(fx1 * bw))
+
+    zone = np.zeros_like(char_mask, dtype=np.uint8)
+    zone[r0:r1+1, c0:c1+1] = 255
+
+    # Dilate so thin border strokes are included
+    if ZONE_DILATION > 0:
+        k = cv2.getStructuringElement(
+            cv2.MORPH_ELLIPSE, (ZONE_DILATION * 2 + 1, ZONE_DILATION * 2 + 1))
+        zone = cv2.dilate(zone, k)
+
+    return (zone > 0) & (char_mask > 0)
+
+
+def _try_sam_refine(predictor, image_rgb: np.ndarray,
+                    zone_mask: np.ndarray, point: tuple,
+                    char_mask: np.ndarray) -> np.ndarray:
+    """
+    Ask SAM for a mask around `point` using the zone bbox as a box prompt.
+    Returns the SAM mask if it looks better than the zone mask, else zone mask.
+    Uses NEGATIVE points outside the zone to discourage bleeding.
+    """
+    rows = np.any(zone_mask, axis=1)
+    cols = np.any(zone_mask, axis=0)
+    if not rows.any() or not cols.any():
+        return zone_mask
+
+    r0, r1 = int(np.where(rows)[0][[0, -1]].tolist()[0]), \
+              int(np.where(rows)[0][[0, -1]].tolist()[1])
+    c0, c1 = int(np.where(cols)[0][[0, -1]].tolist()[0]), \
+              int(np.where(cols)[0][[0, -1]].tolist()[1])
+
+    box = np.array([c0, r0, c1, r1], dtype=float)
+
+    # Build negative points: corners of the full image (outside the zone)
+    H, W = image_rgb.shape[:2]
+    neg_pts = np.array([
+        [W // 2, 2],          # top centre
+        [W // 2, H - 2],      # bottom centre
+        [2,      H // 2],     # left centre
+        [W - 2,  H // 2],     # right centre
+    ])
+    # Keep only negatives that are OUTSIDE the zone box
+    neg_pts = np.array([p for p in neg_pts
+                        if not (c0 <= p[0] <= c1 and r0 <= p[1] <= r1)])
+
+    pos_pts = np.array([list(point)])
+    if len(neg_pts):
+        all_pts    = np.vstack([pos_pts, neg_pts])
+        all_labels = np.array([1] + [0] * len(neg_pts))
+    else:
+        all_pts    = pos_pts
+        all_labels = np.array([1])
+
+    try:
+        masks, scores, _ = predictor.predict(
+            point_coords=all_pts,
+            point_labels=all_labels,
+            box=box,
+            multimask_output=True,
+        )
+    except Exception as e:
+        print(f"      SAM predict error: {e}")
+        return zone_mask
+
+    best      = masks[int(np.argmax(scores))]
+    sam_mask  = best & (char_mask > 0)
+
+    # Accept SAM result only if it's meaningfully smaller (more specific)
+    # than the zone mask — avoids accepting a whole-body leak
+    zone_px = zone_mask.sum()
+    sam_px  = sam_mask.sum()
+    if sam_px < 50:
+        return zone_mask                       # SAM gave almost nothing
+    if sam_px > zone_px * 1.5:
+        print(f"      SAM mask ({sam_px}px) much larger than zone ({zone_px}px) — keeping zone")
+        return zone_mask
+
+    return sam_mask
+
+
 def segment_parts(image_rgb: np.ndarray, char_mask: np.ndarray,
                   part_points: dict) -> dict:
     """
-    For each part, run SAM with its centroid as a foreground prompt.
+    Splits the character into body-part masks using proportional zone cropping.
+    Optionally refines each zone with a SAM box+point prompt.
+
     Returns { part_name: binary_mask (H, W, bool) }
     """
-    print("[Step 3] Loading SAM …")
-    sam = sam_model_registry[SAM_MODEL_TYPE](checkpoint=SAM_CHECKPOINT)
-    sam.to(DEVICE)
-    predictor = SamPredictor(sam)
-    predictor.set_image(image_rgb)
+    rmin, rmax, cmin, cmax = _character_bbox(char_mask)
+    print(f"[Step 3] Character bbox: rows {rmin}–{rmax}, cols {cmin}–{cmax}")
+
+    # ── Try to load SAM for optional refinement ───────────────────────────
+    predictor = None
+    if os.path.exists(SAM_CHECKPOINT):
+        print("[Step 3] Loading SAM for zone refinement …")
+        try:
+            sam = sam_model_registry[SAM_MODEL_TYPE](checkpoint=SAM_CHECKPOINT)
+            sam.to(DEVICE)
+            predictor = SamPredictor(sam)
+            predictor.set_image(image_rgb)
+        except Exception as e:
+            print(f"[Step 3] SAM load failed ({e}) — zone-only mode")
+    else:
+        print("[Step 3] SAM checkpoint not found — using zones only (no refinement)")
 
     part_masks = {}
 
-    for part, point in part_points.items():
-        masks, scores, _ = predictor.predict(
-            point_coords=np.array([list(point)]),
-            point_labels=np.array([1]),          # 1 = foreground
-            multimask_output=True,               # SAM returns 3 candidates
-        )
+    for part, fracs in ZONE_FRACTIONS.items():
+        zone = _zone_mask(char_mask, fracs, rmin, rmax, cmin, cmax)
 
-        # Keep the best-scoring mask, intersected with the character area
-        best_idx  = int(np.argmax(scores))
-        best_mask = masks[best_idx]
-
-        # Restrict to actual character pixels (avoids leaking into background)
-        best_mask = best_mask & (char_mask > 0)
-
-        if best_mask.sum() < 50:
-            print(f"[Step 3]   {part}: mask too small, skipping")
+        if zone.sum() < 50:
+            print(f"[Step 3]   {part}: zone is empty — skipping")
             continue
 
-        part_masks[part] = best_mask
-        print(f"[Step 3]   {part}: score={scores[best_idx]:.3f}  "
-              f"pixels={best_mask.sum()}")
+        if predictor is not None and part in part_points:
+            print(f"[Step 3]   {part}: zone={zone.sum()}px  → refining with SAM …")
+            final_mask = _try_sam_refine(
+                predictor, image_rgb, zone, part_points[part], char_mask)
+        else:
+            final_mask = zone
+
+        part_masks[part] = final_mask
+        print(f"[Step 3]   {part}: final={final_mask.sum()}px")
+
+    # ── Debug: save coloured overlay of all zones ─────────────────────────
+    colours = {
+        "head":       (255,  80,  80),
+        "torso":      ( 80, 200,  80),
+        "left_arm":   ( 80, 130, 255),
+        "right_arm":  (255, 180,  50),
+        "left_leg":   (200,  80, 200),
+        "right_leg":  ( 80, 220, 220),
+    }
+    debug = image_rgb.copy()
+    for part, mask in part_masks.items():
+        col = colours.get(part, (200, 200, 200))
+        debug[mask] = (
+            debug[mask] * 0.4 + np.array(col) * 0.6
+        ).clip(0, 255).astype(np.uint8)
+    dbg_path = os.path.join(OUTPUT_DIR, "segmentation_debug.png")
+    cv2.imwrite(dbg_path, cv2.cvtColor(debug, cv2.COLOR_RGB2BGR))
+    print(f"[Step 3] Segmentation debug → {dbg_path}")
 
     return part_masks
 
@@ -508,12 +672,12 @@ def main():
     if not part_points:
         sys.exit("No keypoints found and fallback failed. Check your image path.")
 
-    # 3. Segment with SAM
+    # 3. Segment with SAM + zones
+    # (SAM is optional — zone splitting works without it)
     if not os.path.exists(SAM_CHECKPOINT):
         print(f"\n[!] SAM checkpoint not found at '{SAM_CHECKPOINT}'")
-        print("    Download with:")
-        print("    wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth\n")
-        sys.exit(1)
+        print("    Continuing with zone-only segmentation (no SAM refinement)")
+        print("    To enable SAM: wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth\n")
 
     part_masks = segment_parts(image_rgb, char_mask, part_points)
 
