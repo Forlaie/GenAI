@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply min-h-screen;
+  }
+
+  html,
+  body {
+    height: 100%;
+    width: 100%;
+  }
+}
+
+/* Custom utility for full viewport sizing */
+.size-full {
+  width: 100%;
+  height: 100vh;
+}
