@@ -26,7 +26,7 @@ from PIL import Image
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIG — edit these
 # ─────────────────────────────────────────────────────────────────────────────
-IMAGE_PATH      = ".png"        # your drawing
+IMAGE_PATH      = "boy.png"        # your drawing
 SAM_CHECKPOINT  = "sam_vit_b_01ec64.pth"
 SAM_MODEL_TYPE  = "vit_b"
 DEVICE          = "cpu"              # "cuda" if you have a GPU
