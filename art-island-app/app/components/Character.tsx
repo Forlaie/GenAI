@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { motion } from 'motion/react';
+import { motion } from "motion/react";
 
 interface CharacterProps {
   id: string;
@@ -11,19 +11,25 @@ interface CharacterProps {
   onClick: () => void;
 }
 
-export function Character({ imageUrl, name, position, onClick }: CharacterProps) {
+export function Character({
+  imageUrl,
+  name,
+  position,
+  onClick,
+}: CharacterProps) {
   return (
     <motion.div
       className="absolute cursor-pointer"
       style={{
         left: `${position.x}%`,
-        bottom: `${position.y}%`,
+        top: `${position.y}%`,
+        transform: "translate(-50%, -50%)",
       }}
       initial={{ scale: 0, y: -100 }}
       animate={{ scale: 1, y: 0 }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
-      transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
       onClick={onClick}
     >
       <div className="flex flex-col items-center">

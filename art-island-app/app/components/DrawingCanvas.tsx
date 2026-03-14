@@ -9,6 +9,7 @@ interface DrawingCanvasProps {
   onClose?: () => void;
   width?: number;
   height?: number;
+  tutorialHint?: string;
 }
 
 const COLORS = [
@@ -29,6 +30,7 @@ export function DrawingCanvas({
   onClose,
   width = 680,
   height = 420,
+  tutorialHint,
 }: DrawingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tool, setTool] = useState<Tool>("pen");
@@ -46,10 +48,54 @@ export function DrawingCanvas({
     if (!ctx) return;
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, width, height);
+    
+    // Draw dotted goose guide if in tutorial
+    if (tutorialHint && tutorialHint.includes("goose")) {
+      drawGooseGuide(ctx);
+    }
+    
     const initial = canvas.toDataURL();
     setHistory([initial]);
     setHistoryIndex(0);
-  }, [width, height]);
+  }, [width, height, tutorialHint]);
+
+  const drawGooseGuide = (ctx: CanvasRenderingContext2D) => {
+    ctx.strokeStyle = "#D3D1C7";
+    ctx.setLineDash([5, 5]); // Dotted line
+    ctx.lineWidth = 2;
+    
+    const centerX = width / 2;
+    const centerY = height / 2;
+    
+    // Draw goose body (large circle)
+    ctx.beginPath();
+    ctx.arc(centerX, centerY + 20, 50, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Draw goose neck (curved line)
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY - 30);
+    ctx.quadraticCurveTo(centerX + 20, centerY - 60, centerX + 15, centerY - 90);
+    ctx.stroke();
+    
+    // Draw goose head (small circle)
+    ctx.beginPath();
+    ctx.arc(centerX + 15, centerY - 100, 20, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Draw goose beak
+    ctx.beginPath();
+    ctx.moveTo(centerX + 32, centerY - 100);
+    ctx.lineTo(centerX + 55, centerY - 105);
+    ctx.stroke();
+    
+    // Draw wing
+    ctx.beginPath();
+    ctx.arc(centerX - 40, centerY + 10, 25, 0, Math.PI, true);
+    ctx.stroke();
+    
+    ctx.setLineDash([]); // Reset line dash
+  };
 
   const getPos = useCallback(
     (e: React.MouseEvent | React.TouchEvent): { x: number; y: number } => {
@@ -355,6 +401,11 @@ export function DrawingCanvas({
       </div>
 
       {/* Canvas */}
+      {tutorialHint && (
+        <div className="px-4 py-2 bg-purple-50 border border-purple-200 rounded-lg">
+          <p className="text-sm text-purple-700 font-medium">{tutorialHint}</p>
+        </div>
+      )}
       <div
         className="rounded-xl overflow-hidden border border-gray-100 w-full"
         style={{ cursor: cursorStyle }}
