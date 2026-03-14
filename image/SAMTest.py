@@ -9,7 +9,7 @@ client = InferenceClient(
     provider="hf-inference",
     api_key=os.environ["HF_TOKEN"],
 )
-output = client.image_segmentation("image.png", model="jonathandinu/face-parsing")
+output = client.image_segmentation("penguin.png", model="jonathandinu/face-parsing")
 
 
 text_output = []
