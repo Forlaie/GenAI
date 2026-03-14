@@ -19,7 +19,8 @@ export function Character({
 }: CharacterProps) {
   return (
     <motion.div
-      className="absolute cursor-pointer"
+      className="absolute cursor-pointer pointer-events-auto"
+      data-no-pan="true"
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,

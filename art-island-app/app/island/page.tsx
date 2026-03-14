@@ -21,6 +21,7 @@ interface CharacterData {
   name: string;
   age: number;
   position: { x: number; y: number };
+  islandId: number;
 }
 
 interface IslandData {
@@ -32,6 +33,9 @@ interface IslandData {
   border: string;
   label: string;
 }
+
+const ISLAND_SIZE = 620;
+const CHARACTER_FOOTPRINT_PX = 112;
 
 export default function App() {
   const router = useRouter();
@@ -46,6 +50,12 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [tutorialStep, setTutorialStep] = useState<TutorialStep>("none");
   const [showTutorialOverlay, setShowTutorialOverlay] = useState(true);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   useEffect(() => {
     loadCharacters();
@@ -77,12 +87,18 @@ export default function App() {
       }
       if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
-      setIslands(data);
+      const normalizedIslands = data.map((island: IslandData) => ({
+        ...island,
+        size: ISLAND_SIZE,
+      }));
+      setIslands(normalizedIslands);
       setNextIslandId(
-        data.length > 0 ? Math.max(...data.map((i: any) => i.id)) + 1 : 1,
+        normalizedIslands.length > 0
+          ? Math.max(...normalizedIslands.map((i: any) => i.id)) + 1
+          : 1,
       );
 
-      if (data.length === 0) {
+      if (normalizedIslands.length === 0) {
         setTutorialStep("create-island");
         setShowTutorialOverlay(true);
       }
@@ -110,7 +126,7 @@ export default function App() {
       const newIsland: IslandData = {
         id: nextIslandId,
         ...getValidIslandPosition(),
-        size: 100 + Math.random() * 60,
+        size: ISLAND_SIZE,
         color,
         border,
         label: name,
@@ -139,7 +155,112 @@ export default function App() {
 
   const getCharacterPosition = (islandId: number): { x: number; y: number } => {
     const island = islands.find((i) => i.id === islandId);
-    return island ? { x: island.x, y: island.y } : { x: 50, y: 50 };
+    if (!island) return { x: 50, y: 50 };
+
+    const existingPositions = characters
+      .filter((char) => char.islandId === islandId)
+      .map((char) => char.position);
+    const minDistance = (CHARACTER_FOOTPRINT_PX / island.size) * 100;
+    const maxRadius = 50 - minDistance / 2 - 3;
+
+    if (existingPositions.length === 0) {
+      return { x: 50, y: 50 };
+    }
+
+    for (let attempt = 0; attempt < 240; attempt++) {
+      const angle = attempt * 2.399963229728653;
+      const distance = maxRadius * (0.45 + 0.55 * ((attempt % 12) / 11));
+      const candidate = {
+        x: 50 + Math.cos(angle) * distance,
+        y: 50 + Math.sin(angle) * distance,
+      };
+
+      const isColliding = existingPositions.some((position) => {
+        const dx = position.x - candidate.x;
+        const dy = position.y - candidate.y;
+        return Math.sqrt(dx * dx + dy * dy) < minDistance;
+      });
+
+      if (!isColliding) {
+        return candidate;
+      }
+    }
+
+    return { x: 50, y: 50 };
+  };
+
+  const getIslandCharacterLayouts = (islandId: number) => {
+    const island = islands.find((item) => item.id === islandId);
+    if (!island) return [] as CharacterData[];
+
+    const islandCharacters = characters.filter(
+      (char) => char.islandId === islandId,
+    );
+    const placedPositions: Array<{ x: number; y: number }> = [];
+    const minDistance = (CHARACTER_FOOTPRINT_PX / island.size) * 100;
+    const maxRadius = 50 - minDistance / 2 - 3;
+
+    return islandCharacters.map((character, index) => {
+      if (index === 0) {
+        const centered = {
+          ...character,
+          position: { x: 50, y: 50 },
+        };
+        placedPositions.push(centered.position);
+        return centered;
+      }
+
+      for (let attempt = 0; attempt < 240; attempt++) {
+        const angle = index * 0.9 + attempt * 2.399963229728653;
+        const radius = maxRadius * (0.45 + 0.55 * ((attempt % 12) / 11));
+        const candidate = {
+          x: 50 + Math.cos(angle) * radius,
+          y: 50 + Math.sin(angle) * radius,
+        };
+
+        const isColliding = placedPositions.some((position) => {
+          const dx = position.x - candidate.x;
+          const dy = position.y - candidate.y;
+          return Math.sqrt(dx * dx + dy * dy) < minDistance;
+        });
+
+        if (!isColliding) {
+          placedPositions.push(candidate);
+          return {
+            ...character,
+            position: candidate,
+          };
+        }
+      }
+
+      const fallbackAngle =
+        index * ((Math.PI * 2) / Math.max(islandCharacters.length, 1));
+      const fallback = {
+        x: 50 + Math.cos(fallbackAngle) * maxRadius,
+        y: 50 + Math.sin(fallbackAngle) * maxRadius,
+      };
+      placedPositions.push(fallback);
+      return {
+        ...character,
+        position: fallback,
+      };
+    });
+  };
+
+  const getIslandDisplayPosition = (index: number, total: number) => {
+    const columns = Math.max(1, Math.ceil(Math.sqrt(total)));
+    const rows = Math.ceil(total / columns);
+    const column = index % columns;
+    const row = Math.floor(index / columns);
+    const horizontalSpacing = ISLAND_SIZE + 180;
+    const verticalSpacing = ISLAND_SIZE + 220;
+    const offsetX = (column - (columns - 1) / 2) * horizontalSpacing;
+    const offsetY = (row - (rows - 1) / 2) * verticalSpacing;
+
+    return {
+      left: `calc(50% + ${offsetX}px)`,
+      top: `calc(50% + ${offsetY}px)`,
+    };
   };
 
   const handleDrawingSave = (dataUrl: string) => {
@@ -193,6 +314,55 @@ export default function App() {
     }
   };
 
+  const handleCanvasPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Don't pan if any modal is open or character is selected
+    if (
+      modalState !== "none" ||
+      showNewIslandModal ||
+      showTutorialOverlay ||
+      selectedCharacter
+    ) {
+      return;
+    }
+
+    const target = e.target as HTMLElement;
+    if (target.closest("[data-no-pan='true']") || target.closest("button")) {
+      return;
+    }
+
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setIsPanning(true);
+    setPanStart({ x: e.clientX, y: e.clientY });
+  };
+
+  const handleCanvasPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isPanning || !panStart) return;
+
+    const deltaX = e.clientX - panStart.x;
+    const deltaY = e.clientY - panStart.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    // Only pan after 3px of movement to avoid accidental drags on clicks
+    if (distance > 3) {
+      setPanX((current) => current + deltaX);
+      setPanY((current) => current + deltaY);
+      setPanStart({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleCanvasPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    setIsPanning(false);
+    setPanStart(null);
+  };
+
+  const handleCanvasPointerCancel = () => {
+    setIsPanning(false);
+    setPanStart(null);
+  };
+
   if (loading) {
     return (
       <div className="size-full flex items-center justify-center bg-white">
@@ -202,43 +372,61 @@ export default function App() {
   }
 
   return (
-    <div className="size-full relative overflow-hidden bg-white">
-      {/* Planets */}
-      <div className="absolute inset-0 pointer-events-none">
-        {islands.map((planet) => (
-          <div
-            key={planet.id}
-            className="absolute -translate-x-1/2 -translate-y-1/2"
-            style={{ left: `${planet.x}%`, top: `${planet.y}%` }}
-          >
-            <div
-              style={{
-                width: planet.size,
-                height: planet.size,
-                borderRadius: "50%",
-                background: planet.color,
-                border: `2px solid ${planet.border}`,
-              }}
-            />
-            <p
-              className="text-center text-xs font-medium mt-1"
-              style={{ color: "#888780" }}
-            >
-              {planet.label}
-            </p>
-          </div>
-        ))}
-      </div>
+    <div
+      className={`size-full touch-none select-none relative overflow-hidden bg-white ${isPanning ? "cursor-grabbing" : "cursor-grab"}`}
+      onPointerDown={handleCanvasPointerDown}
+      onPointerMove={handleCanvasPointerMove}
+      onPointerUp={handleCanvasPointerUp}
+      onPointerCancel={handleCanvasPointerCancel}
+    >
+      {/* Planets and Characters Container */}
+      <div
+        style={{
+          transform: `translate(${panX}px, ${panY}px)`,
+          transition: isPanning ? "none" : "transform 0.1s ease-out",
+        }}
+        className="absolute inset-0 pointer-events-none"
+      >
+        {islands.map((planet, index) => {
+          const displayPosition = getIslandDisplayPosition(
+            index,
+            islands.length,
+          );
 
-      {/* Characters */}
-      <div className="absolute inset-0">
-        {characters.map((character) => (
-          <Character
-            key={character.id}
-            {...character}
-            onClick={() => setSelectedCharacter(character)}
-          />
-        ))}
+          return (
+            <div
+              key={planet.id}
+              className="absolute -translate-x-1/2 -translate-y-1/2"
+              style={displayPosition}
+            >
+              <div
+                style={{
+                  width: planet.size,
+                  height: planet.size,
+                  borderRadius: "50%",
+                  background: planet.color,
+                  border: `2px solid ${planet.border}`,
+                  overflow: "hidden",
+                  position: "relative",
+                }}
+              >
+                {getIslandCharacterLayouts(planet.id).map((character) => (
+                  <Character
+                    key={character.id}
+                    {...character}
+                    onClick={() => setSelectedCharacter(character)}
+                  />
+                ))}
+              </div>
+              <p
+                className="text-center text-xs font-medium mt-1"
+                style={{ color: "#888780" }}
+              >
+                {planet.label}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       {/* Add Button */}
@@ -264,16 +452,16 @@ export default function App() {
       {/* Logout */}
       <button
         onClick={handleLogout}
-        className="fixed top-4 sm:top-6 right-4 sm:right-6 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium px-4 py-2 rounded-full transition-all flex items-center gap-2 z-10 text-sm"
+        className="fixed top-4 sm:top-6 right-4 sm:right-6 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all flex items-center gap-2 z-10 text-sm sm:text-base"
       >
-        <LogOut className="w-4 h-4" />
+        <LogOut className="w-5 h-5" />
         <span className="hidden sm:inline">Log Out</span>
       </button>
 
       {/* Title */}
       <div className="fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 text-center z-10 px-4">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-800">
-          Planet Pals
+          Art Island
         </h1>
         <p className="text-gray-400 text-xs sm:text-sm mt-1">
           Where your drawings come to life
