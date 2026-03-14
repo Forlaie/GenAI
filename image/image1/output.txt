@@ -1,0 +1,6 @@
+[
+  {
+    "label": "teddy bear",
+    "score": 0.993843
+  }
+]
