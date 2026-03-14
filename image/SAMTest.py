@@ -39,4 +39,11 @@ def generate(image_name):
         print(f"  Mask saved as: mask_{i}_{segment['label']}.png")
 
 
+client = InferenceClient(
+    provider="hf-inference",
+    api_key=os.environ["HF_TOKEN"],
+)
+output = client.image_segmentation("penguin.png", model="jonathandinu/face-parsing")
+
+
 generate("test1.png")
