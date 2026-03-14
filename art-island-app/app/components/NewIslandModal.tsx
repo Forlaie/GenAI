@@ -22,11 +22,18 @@ const ISLAND_COLORS: IslandColor[] = [
 interface NewIslandModalProps {
   onClose: () => void;
   onSubmit: (name: string, color: string, border: string) => void;
+  isTutorial?: boolean;
 }
 
-export function NewIslandModal({ onClose, onSubmit }: NewIslandModalProps) {
-  const [name, setName] = useState("");
-  const [selectedColor, setSelectedColor] = useState(ISLAND_COLORS[0]);
+export function NewIslandModal({
+  onClose,
+  onSubmit,
+  isTutorial,
+}: NewIslandModalProps) {
+  const [name, setName] = useState(isTutorial ? "Toronto" : "");
+  const [selectedColor, setSelectedColor] = useState(
+    isTutorial ? ISLAND_COLORS[3] : ISLAND_COLORS[0],
+  ); // Pink for tutorial
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,9 +66,14 @@ export function NewIslandModal({ onClose, onSubmit }: NewIslandModalProps) {
           <X className="w-6 h-6" />
         </button>
 
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">
           Create New Island
         </h2>
+        {isTutorial && (
+          <p className="text-sm text-gray-600 mb-6">
+            🍁 Perfect! Let's create your first island - Toronto!
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>

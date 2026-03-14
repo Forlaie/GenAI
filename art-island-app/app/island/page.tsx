@@ -10,8 +10,10 @@ import { UploadModal } from "../components/UploadModal";
 import { NewIslandModal } from "../components/NewIslandModal";
 import { ChooseInputModal } from "../components/ChooseInputModal";
 import { DrawingCanvas } from "../components/DrawingCanvas";
+import { TutorialOverlay } from "../components/TutorialOverlay";
 
 type ModalState = "none" | "choose" | "draw" | "upload";
+type TutorialStep = "create-island" | "draw-maple" | "none";
 
 interface CharacterData {
   id: string;
@@ -45,6 +47,8 @@ export default function App() {
   const [islands, setIslands] = useState<IslandData[]>([]);
   const [nextIslandId, setNextIslandId] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [tutorialStep, setTutorialStep] = useState<TutorialStep>("none");
+  const [showTutorialOverlay, setShowTutorialOverlay] = useState(true);
 
   useEffect(() => {
     loadCharacters();
@@ -88,6 +92,10 @@ export default function App() {
       setIslands(data);
       if (data.length > 0) {
         setNextIslandId(Math.max(...data.map((i: any) => i.id)) + 1);
+      } else {
+        // First time user - show tutorial
+        setTutorialStep("create-island");
+        setShowNewIslandModal(true);
       }
     } catch (error) {
       console.error("Error loading islands:", error);
@@ -148,6 +156,13 @@ export default function App() {
       if (!res.ok) throw new Error("Failed to save island");
       setIslands((prev) => [...prev, newIsland]);
       setNextIslandId((prev) => prev + 1);
+      setShowNewIslandModal(false);
+
+      // Advance tutorial
+      if (tutorialStep === "create-island") {
+        setTutorialStep("draw-maple");
+        setShowTutorialOverlay(true); // Show the second overlay
+      }
     } catch (error) {
       console.error("Error adding island:", error);
       alert("Failed to add island. Please try again.");
@@ -231,6 +246,17 @@ export default function App() {
   const closeAll = () => {
     setModalState("none");
     setPendingDrawing(null);
+  };
+
+  const handleTutorialDismiss = () => {
+    if (tutorialStep === "create-island") {
+      // Hide overlay but keep tutorial step so island creation can advance it
+      setShowTutorialOverlay(false);
+    } else if (tutorialStep === "draw-maple") {
+      // Open draw/upload choice modal and close overlay
+      setModalState("choose");
+      setShowTutorialOverlay(false);
+    }
   };
 
   if (loading) {
@@ -356,6 +382,11 @@ export default function App() {
             <DrawingCanvas
               onSave={handleDrawingSave}
               onClose={() => setModalState("choose")}
+              tutorialHint={
+                tutorialStep === "draw-maple"
+                  ? "🦆 Draw a goose! Let your creativity shine!"
+                  : undefined
+              }
             />
           </motion.div>
         )}
@@ -376,9 +407,19 @@ export default function App() {
           <NewIslandModal
             onClose={() => setShowNewIslandModal(false)}
             onSubmit={handleAddIsland}
+            isTutorial={tutorialStep === "create-island"}
           />
         )}
       </AnimatePresence>
+
+      {/* Tutorial Overlay */}
+      {showTutorialOverlay &&
+        (tutorialStep === "create-island" || tutorialStep === "draw-maple") && (
+          <TutorialOverlay
+            step={tutorialStep}
+            onDismiss={handleTutorialDismiss}
+          />
+        )}
     </div>
   );
 }

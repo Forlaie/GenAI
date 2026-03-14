@@ -9,6 +9,7 @@ interface DrawingCanvasProps {
   onClose?: () => void;
   width?: number;
   height?: number;
+  tutorialHint?: string;
 }
 
 const COLORS = [
@@ -29,6 +30,7 @@ export function DrawingCanvas({
   onClose,
   width = 680,
   height = 420,
+  tutorialHint,
 }: DrawingCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tool, setTool] = useState<Tool>("pen");
@@ -355,6 +357,11 @@ export function DrawingCanvas({
       </div>
 
       {/* Canvas */}
+      {tutorialHint && (
+        <div className="px-4 py-2 bg-purple-50 border border-purple-200 rounded-lg">
+          <p className="text-sm text-purple-700 font-medium">{tutorialHint}</p>
+        </div>
+      )}
       <div
         className="rounded-xl overflow-hidden border border-gray-100 w-full"
         style={{ cursor: cursorStyle }}
