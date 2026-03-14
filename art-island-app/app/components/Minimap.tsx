@@ -63,10 +63,10 @@ export function Minimap({ islands, characters, panX, panY }: MinimapProps) {
   const scaleX = minimapWidth / worldWidth;
   const scaleY = minimapHeight / worldHeight;
 
-  // Convert world position to minimap coordinates
-  const worldToMinimap = (worldX: number, worldY: number) => ({
-    x: (worldX - minX) * scaleX,
-    y: (worldY - minY) * scaleY,
+  // Convert world position to user-centric minimap coordinates (user always in center)
+  const worldToUserCentricMinimap = (worldX: number, worldY: number) => ({
+    x: (worldX + panX) * scaleX + minimapWidth / 2,
+    y: (worldY + panY) * scaleY + minimapHeight / 2,
   });
 
   return (
@@ -78,7 +78,7 @@ export function Minimap({ islands, characters, panX, panY }: MinimapProps) {
         {/* Islands */}
         {islands.map((island, index) => {
           const pixelPos = islandPixelPositions[index];
-          const minimapPos = worldToMinimap(pixelPos.x, pixelPos.y);
+          const minimapPos = worldToUserCentricMinimap(pixelPos.x, pixelPos.y);
           const displaySize = (island.size / worldWidth) * minimapWidth * 0.3;
 
           return (
@@ -113,7 +113,10 @@ export function Minimap({ islands, characters, panX, panY }: MinimapProps) {
           const charWorldX = islandPixelPos.x + character.position.x - 50;
           const charWorldY = islandPixelPos.y + character.position.y - 50;
 
-          const charMinimapPos = worldToMinimap(charWorldX, charWorldY);
+          const charMinimapPos = worldToUserCentricMinimap(
+            charWorldX,
+            charWorldY,
+          );
 
           return (
             <div
@@ -132,15 +135,15 @@ export function Minimap({ islands, characters, panX, panY }: MinimapProps) {
           );
         })}
 
-        {/* Viewport indicator - shows current view */}
+        {/* Viewport indicator - user always in center */}
         <div
           className="absolute rounded-full"
           style={{
-            left: (-panX - minX) * scaleX - 4,
-            top: (-panY - minY) * scaleY - 4,
+            left: minimapWidth / 2 - 4,
+            top: minimapHeight / 2 - 4,
             width: 8,
             height: 8,
-            backgroundColor: "#A855F7",
+            backgroundColor: "#000000",
             border: "1px solid #7C3AED",
             pointerEvents: "none",
             opacity: 0.8,
