@@ -10,7 +10,26 @@ interface CharacterDetailProps {
   onClose: () => void;
 }
 
+function getAgeDisplay(ageInDays: number): string {
+  if (ageInDays === 0) {
+    return '0 days old';
+  }
+  
+  const years = Math.floor(ageInDays / 365.25);
+  if (years > 0) {
+    return `${years} year${years > 1 ? 's' : ''} old`;
+  }
+  
+  const months = Math.floor(ageInDays / 30.44);
+  if (months > 0) {
+    return `${months} month${months > 1 ? 's' : ''} old`;
+  }
+  
+  return `${ageInDays} day${ageInDays > 1 ? 's' : ''} old`;
+}
+
 export function CharacterDetail({ imageUrl, name, age, onClose }: CharacterDetailProps) {
+  const ageDisplay = getAgeDisplay(age);
   return (
     <motion.div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
@@ -54,7 +73,7 @@ export function CharacterDetail({ imageUrl, name, age, onClose }: CharacterDetai
 
               <p className="text-2xl md:text-3xl font-bold text-gray-800 leading-relaxed">
                 Hi! My name is <span className="text-purple-600">{name}</span> and I am{' '}
-                <span className="text-pink-600">{age}</span> years old!
+                <span className="text-pink-600">{ageDisplay}</span>!
               </p>
             </motion.div>
           </div>

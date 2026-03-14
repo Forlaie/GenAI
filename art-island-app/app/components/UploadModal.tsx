@@ -46,8 +46,8 @@ export function UploadModal({
     const createdDate = new Date(dateString);
     const today = new Date();
     const ageInMs = today.getTime() - createdDate.getTime();
-    const ageInYears = Math.floor(ageInMs / (1000 * 60 * 60 * 24 * 365.25));
-    return Math.max(0, ageInYears);
+    const ageInDays = Math.floor(ageInMs / (1000 * 60 * 60 * 24));
+    return Math.max(0, ageInDays);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
