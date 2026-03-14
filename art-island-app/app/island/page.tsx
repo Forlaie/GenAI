@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import { Plus, LogOut, MapPin } from "lucide-react";
@@ -39,6 +39,7 @@ const CHARACTER_FOOTPRINT_PX = 112;
 
 export default function App() {
   const router = useRouter();
+  const panStartRef = useRef<{ x: number; y: number } | null>(null);
   const [characters, setCharacters] = useState<CharacterData[]>([]);
   const [selectedCharacter, setSelectedCharacter] =
     useState<CharacterData | null>(null);
@@ -53,9 +54,6 @@ export default function App() {
   const [panX, setPanX] = useState(0);
   const [panY, setPanY] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState<{ x: number; y: number } | null>(
-    null,
-  );
 
   useEffect(() => {
     loadCharacters();
@@ -315,13 +313,8 @@ export default function App() {
   };
 
   const handleCanvasPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    // Don't pan if any modal is open or character is selected
-    if (
-      modalState !== "none" ||
-      showNewIslandModal ||
-      showTutorialOverlay ||
-      selectedCharacter
-    ) {
+    // Don't pan if drawing, uploading, or character detail is open
+    if (modalState === "draw" || modalState === "upload" || selectedCharacter) {
       return;
     }
 
@@ -332,35 +325,41 @@ export default function App() {
 
     e.currentTarget.setPointerCapture(e.pointerId);
     setIsPanning(true);
-    setPanStart({ x: e.clientX, y: e.clientY });
+    panStartRef.current = { x: e.clientX, y: e.clientY };
   };
 
   const handleCanvasPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPanning || !panStart) return;
+    if (!panStartRef.current) return;
+    const panStart = panStartRef.current;
 
     const deltaX = e.clientX - panStart.x;
     const deltaY = e.clientY - panStart.y;
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-    // Only pan after 3px of movement to avoid accidental drags on clicks
-    if (distance > 3) {
-      setPanX((current) => current + deltaX);
-      setPanY((current) => current + deltaY);
-      setPanStart({ x: e.clientX, y: e.clientY });
-    }
+    if (distance <= 3) return;
+
+    setPanX((current) => current + deltaX);
+    setPanY((current) => current + deltaY);
+    panStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const stopPanning = () => {
+    panStartRef.current = null;
+    setIsPanning(false);
   };
 
   const handleCanvasPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
-    setIsPanning(false);
-    setPanStart(null);
+    stopPanning();
   };
 
-  const handleCanvasPointerCancel = () => {
-    setIsPanning(false);
-    setPanStart(null);
+  const handleCanvasPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    }
+    stopPanning();
   };
 
   if (loading) {
