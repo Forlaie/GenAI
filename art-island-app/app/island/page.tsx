@@ -19,6 +19,7 @@ interface CharacterData {
   name: string;
   age: number;
   position: { x: number; y: number };
+  islandId?: number;
 }
 
 interface IslandData {
@@ -31,35 +32,7 @@ interface IslandData {
   label: string;
 }
 
-const DEFAULT_PLANETS: IslandData[] = [
-  {
-    id: 1,
-    x: 18,
-    y: 52,
-    size: 160,
-    color: "#EEEDFE",
-    border: "#AFA9EC",
-    label: "Planet Luminos",
-  },
-  {
-    id: 2,
-    x: 50,
-    y: 58,
-    size: 130,
-    color: "#E1F5EE",
-    border: "#5DCAA5",
-    label: "Planet Verdara",
-  },
-  {
-    id: 3,
-    x: 78,
-    y: 48,
-    size: 110,
-    color: "#FAEEDA",
-    border: "#EF9F27",
-    label: "Planet Solara",
-  },
-];
+// Islands will be loaded from database
 
 export default function App() {
   const router = useRouter();
@@ -69,12 +42,13 @@ export default function App() {
   const [modalState, setModalState] = useState<ModalState>("none");
   const [pendingDrawing, setPendingDrawing] = useState<string | null>(null);
   const [showNewIslandModal, setShowNewIslandModal] = useState(false);
-  const [islands, setIslands] = useState<IslandData[]>(DEFAULT_PLANETS);
-  const [nextIslandId, setNextIslandId] = useState(4);
+  const [islands, setIslands] = useState<IslandData[]>([]);
+  const [nextIslandId, setNextIslandId] = useState(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadCharacters();
+    loadIslands();
   }, []);
 
   const loadCharacters = async () => {
@@ -99,6 +73,24 @@ export default function App() {
       console.error("Error loading characters:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadIslands = async () => {
+    try {
+      const res = await fetch("/api/islands");
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!res.ok) throw new Error("Failed to fetch");
+      const data = await res.json();
+      setIslands(data);
+      if (data.length > 0) {
+        setNextIslandId(Math.max(...data.map((i: any) => i.id)) + 1);
+      }
+    } catch (error) {
+      console.error("Error loading islands:", error);
     }
   };
 
@@ -130,19 +122,36 @@ export default function App() {
     return { x: Math.random() * 70 + 10, y: Math.random() * 70 + 15 };
   };
 
-  const handleAddIsland = (name: string, color: string, border: string) => {
-    const position = getValidIslandPosition();
-    const newIsland: IslandData = {
-      id: nextIslandId,
-      x: position.x,
-      y: position.y,
-      size: 100 + Math.random() * 60,
-      color,
-      border,
-      label: name,
-    };
-    setIslands((prev) => [...prev, newIsland]);
-    setNextIslandId((prev) => prev + 1);
+  const handleAddIsland = async (
+    name: string,
+    color: string,
+    border: string,
+  ) => {
+    try {
+      const position = getValidIslandPosition();
+      const newIsland: IslandData = {
+        id: nextIslandId,
+        x: position.x,
+        y: position.y,
+        size: 100 + Math.random() * 60,
+        color,
+        border,
+        label: name,
+      };
+
+      const res = await fetch("/api/islands", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newIsland),
+      });
+
+      if (!res.ok) throw new Error("Failed to save island");
+      setIslands((prev) => [...prev, newIsland]);
+      setNextIslandId((prev) => prev + 1);
+    } catch (error) {
+      console.error("Error adding island:", error);
+      alert("Failed to add island. Please try again.");
+    }
   };
 
   const getValidCharacterPosition = (
@@ -205,7 +214,7 @@ export default function App() {
       const res = await fetch("/api/characters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, age, imageUrl, position }),
+        body: JSON.stringify({ name, age, imageUrl, position, islandId }),
       });
 
       if (!res.ok) throw new Error("Failed to save");

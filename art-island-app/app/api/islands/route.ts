@@ -4,18 +4,19 @@ import mongoose from "mongoose";
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
-const characterSchema = new mongoose.Schema({
+const islandSchema = new mongoose.Schema({
   userId: String,
-  name: String,
-  age: Number,
-  imageUrl: String,
-  position: { x: Number, y: Number },
-  islandId: Number,
+  id: Number,
+  x: Number,
+  y: Number,
+  size: Number,
+  color: String,
+  border: String,
+  label: String,
   createdAt: { type: Date, default: Date.now },
 });
 
-const Character =
-  mongoose.models.Character || mongoose.model("Character", characterSchema);
+const Island = mongoose.models.Island || mongoose.model("Island", islandSchema);
 
 const secret = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback-secret-change-me",
@@ -40,22 +41,23 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     await connectDB();
-    const characters = await Character.find({ userId }).sort({ createdAt: 1 });
+    const islands = await Island.find({ userId }).sort({ createdAt: 1 });
 
     return NextResponse.json(
-      characters.map((char) => ({
-        id: char._id.toString(),
-        imageUrl: char.imageUrl,
-        name: char.name,
-        age: char.age,
-        position: char.position,
-        islandId: char.islandId,
+      islands.map((island) => ({
+        id: island.id,
+        x: island.x,
+        y: island.y,
+        size: island.size,
+        color: island.color,
+        border: island.border,
+        label: island.label,
       })),
     );
   } catch (error) {
     console.error("GET error:", error);
     return NextResponse.json(
-      { error: "Failed to load characters" },
+      { error: "Failed to load islands" },
       { status: 500 },
     );
   }
@@ -70,27 +72,30 @@ export async function POST(request: Request) {
     await connectDB();
     const body = await request.json();
 
-    const character = await Character.create({
+    const island = await Island.create({
       userId,
-      name: body.name,
-      age: body.age,
-      imageUrl: body.imageUrl,
-      position: body.position,
-      islandId: body.islandId,
+      id: body.id,
+      x: body.x,
+      y: body.y,
+      size: body.size,
+      color: body.color,
+      border: body.border,
+      label: body.label,
     });
 
     return NextResponse.json({
-      id: character._id.toString(),
-      name: character.name,
-      age: character.age,
-      imageUrl: character.imageUrl,
-      position: character.position,
-      islandId: character.islandId,
+      id: island.id,
+      x: island.x,
+      y: island.y,
+      size: island.size,
+      color: island.color,
+      border: island.border,
+      label: island.label,
     });
   } catch (error) {
     console.error("POST error:", error);
     return NextResponse.json(
-      { error: "Failed to save character" },
+      { error: "Failed to save island" },
       { status: 500 },
     );
   }
