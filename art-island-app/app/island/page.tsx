@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
-import { AnimatePresence } from 'motion/react';
-import { Plus, LogOut } from 'lucide-react';
-import { Character } from '../components/Character';
-import { CharacterDetail } from '../components/CharacterDetail';
-import { UploadModal } from '../components/UploadModal';
+import { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { AnimatePresence } from "motion/react";
+import { Plus, LogOut } from "lucide-react";
+import { Character } from "../components/Character";
+import { CharacterDetail } from "../components/CharacterDetail";
+import { UploadModal } from "../components/UploadModal";
 
 interface CharacterData {
   id: string;
@@ -19,28 +19,67 @@ interface CharacterData {
 export default function App() {
   const router = useRouter();
   const [characters, setCharacters] = useState<CharacterData[]>([]);
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterData | null>(null);
+  const [selectedCharacter, setSelectedCharacter] =
+    useState<CharacterData | null>(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [towerColor, setTowerColor] = useState(0);
 
-  const stars = useMemo(() =>
-    Array.from({ length: 100 }, (_, i) => ({
-      id: i,
-      width: Math.random() * 3 + 1,
-      height: Math.random() * 3 + 1,
-      top: Math.random() * 70,
-      opacity: Math.random() * 0.7 + 0.3,
-      animationDelay: Math.random() * -120,
-    })),
-  []);
+  const [islands, setIslands] = useState<
+    {
+      id: number;
+      x: number;
+      y: number;
+      size: number;
+      color: string;
+      rotation: number;
+      delay: number;
+    }[]
+  >([]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setTowerColor((prev) => (prev + 36) % 360);
-    }, 1000);
-    return () => clearInterval(interval);
+    setIslands([
+      {
+        id: 1,
+        x: 10,
+        y: 35,
+        size: 120,
+        color: "from-green-600 to-green-700",
+        rotation: 0,
+        delay: 0,
+      },
+      {
+        id: 2,
+        x: 55,
+        y: 45,
+        size: 150,
+        color: "from-emerald-500 to-emerald-700",
+        rotation: 15,
+        delay: 1,
+      },
+      {
+        id: 3,
+        x: 85,
+        y: 30,
+        size: 100,
+        color: "from-teal-600 to-teal-700",
+        rotation: -10,
+        delay: 2,
+      },
+    ]);
   }, []);
+
+  const stars = useMemo(
+    () =>
+      Array.from({ length: 100 }, (_, i) => ({
+        id: i,
+        width: Math.random() * 3 + 1,
+        height: Math.random() * 3 + 1,
+        top: Math.random() * 70,
+        opacity: Math.random() * 0.7 + 0.3,
+        animationDelay: Math.random() * -120,
+      })),
+    [],
+  );
 
   useEffect(() => {
     loadCharacters();
@@ -48,12 +87,12 @@ export default function App() {
 
   const loadCharacters = async () => {
     try {
-      const res = await fetch('/api/characters');
+      const res = await fetch("/api/characters");
       if (res.status === 401) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
-      if (!res.ok) throw new Error('Failed to fetch');
+      if (!res.ok) throw new Error("Failed to fetch");
       const data = await res.json();
       const mappedCharacters: CharacterData[] = data.map((char: any) => ({
         id: char.id,
@@ -64,15 +103,15 @@ export default function App() {
       }));
       setCharacters(mappedCharacters);
     } catch (error) {
-      console.error('Error loading characters:', error);
+      console.error("Error loading characters:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth', { method: 'DELETE' });
-    router.push('/');
+    await fetch("/api/auth", { method: "DELETE" });
+    router.push("/");
   };
 
   const getValidCharacterPosition = (): { x: number; y: number } => {
@@ -84,7 +123,7 @@ export default function App() {
       const y = 30 + Math.random() * 2;
       const isFarEnough = characters.every((char) => {
         const distance = Math.sqrt(
-          Math.pow(x - char.position.x, 2) + Math.pow(y - char.position.y, 2)
+          Math.pow(x - char.position.x, 2) + Math.pow(y - char.position.y, 2),
         );
         return distance >= minDistance;
       });
@@ -94,7 +133,11 @@ export default function App() {
     return { x: Math.random() * 30 + 35, y: 30 + Math.random() * 2 };
   };
 
-  const handleAddCharacter = async (imageFile: File, name: string, age: number) => {
+  const handleAddCharacter = async (
+    imageFile: File,
+    name: string,
+    age: number,
+  ) => {
     try {
       const position = getValidCharacterPosition();
       const base64 = await new Promise<string>((resolve, reject) => {
@@ -104,25 +147,27 @@ export default function App() {
         reader.readAsDataURL(imageFile);
       });
 
-      const res = await fetch('/api/characters', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/characters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, age, imageUrl: base64, position }),
       });
 
-      if (!res.ok) throw new Error('Failed to save');
+      if (!res.ok) throw new Error("Failed to save");
       const newCharacter = await res.json();
       setCharacters((prev) => [...prev, newCharacter]);
     } catch (error) {
-      console.error('Error adding character:', error);
-      alert('Failed to add character. Please try again.');
+      console.error("Error adding character:", error);
+      alert("Failed to add character. Please try again.");
     }
   };
 
   if (loading) {
     return (
       <div className="size-full flex items-center justify-center bg-gradient-to-b from-black via-indigo-950 to-indigo-900">
-        <div className="text-2xl text-white drop-shadow-lg">Loading the CN Tower... 🗼</div>
+        <div className="text-2xl text-white drop-shadow-lg">
+          Loading the floating islands... ✨
+        </div>
       </div>
     );
   }
@@ -136,78 +181,69 @@ export default function App() {
             key={star.id}
             className="absolute bg-white rounded-full animate-star-drift"
             style={{
-              width: star.width + 'px',
-              height: star.height + 'px',
-              top: star.top + '%',
+              width: star.width + "px",
+              height: star.height + "px",
+              top: star.top + "%",
               opacity: star.opacity,
-              animationDelay: star.animationDelay + 's',
+              animationDelay: star.animationDelay + "s",
             }}
           />
         ))}
       </div>
 
-      {/* CN Tower Structure */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
-        <div
-          className="relative w-0 h-0"
-          style={{
-            borderLeft: 'calc(80px * var(--tower-scale)) solid transparent',
-            borderRight: 'calc(80px * var(--tower-scale)) solid transparent',
-            borderBottom: 'calc(400px * var(--tower-scale)) solid #6b7280',
-            filter: 'drop-shadow(0 4px 20px rgba(0, 0, 0, 0.5))',
-          }}
-        >
+      {/* Floating Islands */}
+      <div className="absolute inset-0 pointer-events-none">
+        {islands.map((island) => (
           <div
-            className="absolute left-1/2 -translate-x-1/2 bg-gray-400"
+            key={island.id}
+            className="absolute animate-bounce"
             style={{
-              width: 'calc(4px * var(--tower-scale))',
-              height: 'calc(120px * var(--tower-scale))',
-              bottom: 'calc(400px * var(--tower-scale))',
+              left: island.x + "%",
+              top: island.y + "%",
+              animationDelay: island.delay + "s",
             }}
-          />
-          <div
-            className="absolute left-1/2 -translate-x-1/2 rounded-full bg-red-500 animate-pulse"
-            style={{
-              width: 'calc(16px * var(--tower-scale))',
-              height: 'calc(16px * var(--tower-scale))',
-              bottom: 'calc(510px * var(--tower-scale))',
-              transform: 'translateX(-50%)',
-              boxShadow: '0 0 20px rgba(239, 68, 68, 0.8)',
-            }}
-          />
-        </div>
+          >
+            {/* Island shadow */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-2 bg-black/20 rounded-full blur-md" />
 
-        <div className="relative flex flex-col items-center">
-          <div className="w-[400px] h-16 bg-gradient-to-b from-gray-300 to-gray-400 rounded-t-full shadow-lg" />
-          <div className="relative w-[500px] h-40 bg-gradient-to-b from-gray-500 to-gray-600 rounded-full shadow-2xl flex items-center justify-center">
+            {/* Island body */}
             <div
-              className="absolute rounded-full transition-all duration-1000 ease-in-out"
+              className={`relative bg-gradient-to-b ${island.color} rounded-full shadow-2xl`}
               style={{
-                width: 'calc(420px * var(--tower-scale))',
-                height: 'calc(128px * var(--tower-scale))',
-                background: `linear-gradient(to bottom, hsla(${towerColor}, 80%, 60%, 0.6), hsla(${towerColor}, 80%, 50%, 0.8))`,
-                boxShadow: `inset 0 0 40px hsla(${towerColor}, 80%, 60%, 0.8), 0 0 60px hsla(${towerColor}, 80%, 60%, 0.5)`,
+                width: island.size + "px",
+                height: Math.floor(island.size * 0.6) + "px",
+                transform: `rotate(${island.rotation}deg)`,
               }}
             >
-              <div className="absolute inset-4 bg-gray-700/40 rounded-full" />
+              {/* Grass texture */}
+              <div className="absolute inset-0 rounded-full opacity-30">
+                <div className="absolute top-2 left-4 w-3 h-3 bg-green-300 rounded-full" />
+                <div className="absolute top-3 right-6 w-2 h-2 bg-green-300 rounded-full" />
+                <div className="absolute top-4 left-1/2 w-2 h-2 bg-green-300 rounded-full" />
+              </div>
+
+              {/* Trees/vegetation */}
+              <div className="absolute top-2 left-3 text-lg">🌲</div>
+              <div className="absolute top-1 right-4 text-lg">🌲</div>
+              {island.size > 100 && (
+                <>
+                  <div className="absolute top-2 left-1/2 text-lg">🌳</div>
+                  <div className="absolute bottom-6 right-6 text-base">🍄</div>
+                </>
+              )}
             </div>
           </div>
-          <div className="relative w-[600px] h-24 bg-gradient-to-b from-gray-600 to-gray-700 rounded-full shadow-xl mt-[-10px]">
-            <div className="absolute inset-0 rounded-full" style={{ border: '3px solid #9ca3af' }} />
-          </div>
-          <div className="bg-gradient-to-b from-gray-700 to-gray-800 rounded-b-full shadow-xl"
-            style={{ width: 'calc(420px * var(--tower-scale))', height: 'calc(64px * var(--tower-scale))' }} />
-          <div className="bg-gradient-to-b from-gray-800 to-gray-900 shadow-2xl"
-            style={{ width: 'calc(128px * var(--tower-scale))', height: 'calc(96px * var(--tower-scale))' }} />
-          <div className="bg-black/50 rounded-full blur-md"
-            style={{ width: 'calc(160px * var(--tower-scale))', height: 'calc(12px * var(--tower-scale))' }} />
-        </div>
+        ))}
       </div>
 
       {/* Characters */}
       <div className="absolute inset-0">
         {characters.map((character) => (
-          <Character key={character.id} {...character} onClick={() => setSelectedCharacter(character)} />
+          <Character
+            key={character.id}
+            {...character}
+            onClick={() => setSelectedCharacter(character)}
+          />
         ))}
       </div>
 
@@ -233,10 +269,10 @@ export default function App() {
       {/* Title */}
       <div className="fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 text-center z-10 px-4">
         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white drop-shadow-lg">
-          CN Tower Observation Deck
+          Art Island
         </h1>
         <p className="text-white/90 text-xs sm:text-sm md:text-base lg:text-lg mt-1 drop-shadow">
-          Toronto, Ontario 🇨🇦
+          Where Your Drawings Come to Life ✨
         </p>
       </div>
 
@@ -244,7 +280,7 @@ export default function App() {
       {characters.length === 0 && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center px-4">
           <p className="text-lg sm:text-xl md:text-2xl text-white/80 drop-shadow">
-            Click "Add Drawing" to bring your art to the CN Tower! 🎨
+            Click "Add Drawing" to bring your art to the floating islands! 🎨
           </p>
         </div>
       )}
@@ -252,10 +288,16 @@ export default function App() {
       {/* Modals */}
       <AnimatePresence>
         {selectedCharacter && (
-          <CharacterDetail {...selectedCharacter} onClose={() => setSelectedCharacter(null)} />
+          <CharacterDetail
+            {...selectedCharacter}
+            onClose={() => setSelectedCharacter(null)}
+          />
         )}
         {showUploadModal && (
-          <UploadModal onClose={() => setShowUploadModal(false)} onSubmit={handleAddCharacter} />
+          <UploadModal
+            onClose={() => setShowUploadModal(false)}
+            onSubmit={handleAddCharacter}
+          />
         )}
       </AnimatePresence>
     </div>

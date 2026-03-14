@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const STARS = [
   { id: 0, width: 2, height: 2, top: 5, left: 10, opacity: 0.8 },
@@ -39,31 +39,35 @@ const STARS = [
 export default function LoginPage() {
   const router = useRouter();
   const [isSignup, setIsSignup] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, action: isSignup ? 'signup' : 'login' }),
+      const res = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          password,
+          action: isSignup ? "signup" : "login",
+        }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Something went wrong');
+        setError(data.error || "Something went wrong");
       } else {
-        router.push('/island');
+        router.push("/island");
       }
     } catch {
-      setError('Something went wrong. Please try again.');
+      setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -73,23 +77,28 @@ export default function LoginPage() {
     <div className="size-full flex items-center justify-center bg-gradient-to-b from-black via-indigo-950 to-indigo-900">
       <div className="absolute inset-0">
         {STARS.map((star) => (
-          <div key={star.id} className="absolute bg-white rounded-full"
+          <div
+            key={star.id}
+            className="absolute bg-white rounded-full"
             style={{
-              width: star.width + 'px',
-              height: star.height + 'px',
-              top: star.top + '%',
-              left: star.left + '%',
+              width: star.width + "px",
+              height: star.height + "px",
+              top: star.top + "%",
+              left: star.left + "%",
               opacity: star.opacity,
-            }} />
+            }}
+          />
         ))}
       </div>
 
       <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 w-full max-w-sm shadow-2xl">
         <h2 className="text-3xl font-bold text-white text-center mb-2">
-          {isSignup ? 'Create Account' : 'Welcome Back'}
+          {isSignup ? "Create Account" : "Welcome Back"}
         </h2>
         <p className="text-white/60 text-center mb-8 text-sm">
-          {isSignup ? 'Sign up to visit the CN Tower' : 'Log in to see your characters'}
+          {isSignup
+            ? "Sign up to visit the floating islands"
+            : "Log in to see your characters"}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -117,17 +126,20 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50"
           >
-            {loading ? 'Loading...' : isSignup ? 'Sign Up' : 'Log In'}
+            {loading ? "Loading..." : isSignup ? "Sign Up" : "Log In"}
           </button>
         </form>
 
         <p className="text-white/50 text-center mt-6 text-sm">
-          {isSignup ? 'Already have an account?' : "Don't have an account?"}
+          {isSignup ? "Already have an account?" : "Don't have an account?"}
           <button
-            onClick={() => { setIsSignup(!isSignup); setError(''); }}
+            onClick={() => {
+              setIsSignup(!isSignup);
+              setError("");
+            }}
             className="text-purple-400 hover:text-purple-300 ml-1 font-medium"
           >
-            {isSignup ? 'Log In' : 'Sign Up'}
+            {isSignup ? "Log In" : "Sign Up"}
           </button>
         </p>
       </div>
