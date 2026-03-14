@@ -1,0 +1,26 @@
+[
+  {
+    "label": "wall",
+    "score": 1
+  },
+  {
+    "label": "sky",
+    "score": 1
+  },
+  {
+    "label": "painting",
+    "score": 1
+  },
+  {
+    "label": "column",
+    "score": 1
+  },
+  {
+    "label": "sconce",
+    "score": 1
+  },
+  {
+    "label": "clock",
+    "score": 1
+  }
+]

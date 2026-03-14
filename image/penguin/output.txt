@@ -1,0 +1,18 @@
+[
+  {
+    "label": "background",
+    "score": 1
+  },
+  {
+    "label": "skin",
+    "score": 1
+  },
+  {
+    "label": "hair",
+    "score": 1
+  },
+  {
+    "label": "hat",
+    "score": 1
+  }
+]
