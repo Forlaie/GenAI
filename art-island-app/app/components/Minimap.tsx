@@ -24,11 +24,12 @@ interface MinimapProps {
   characters: CharacterData[];
   panX: number;
   panY: number;
+  zoom: number;
 }
 
 const ISLAND_SIZE = 620;
 
-export function Minimap({ islands, characters, panX, panY }: MinimapProps) {
+export function Minimap({ islands, characters, panX, panY, zoom }: MinimapProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Independent pan state for the expanded map
@@ -78,8 +79,8 @@ export function Minimap({ islands, characters, panX, panY }: MinimapProps) {
   const scaleY = minimapHeight / worldHeight;
 
   const worldToUserCentricMinimap = (worldX: number, worldY: number) => ({
-    x: (worldX + panX) * scaleX + minimapWidth / 2,
-    y: (worldY + panY) * scaleY + minimapHeight / 2,
+    x: (worldX + panX / zoom) * scaleX * zoom + minimapWidth / 2,
+    y: (worldY + panY / zoom) * scaleY * zoom + minimapHeight / 2,
   });
 
   const expandedContentWidth = expandedWidth - 24;
@@ -136,7 +137,7 @@ export function Minimap({ islands, characters, panX, panY }: MinimapProps) {
               {islands.map((island, index) => {
                 const pixelPos = islandPixelPositions[index];
                 const minimapPos = worldToUserCentricMinimap(pixelPos.x, pixelPos.y);
-                const displaySize = (island.size / worldWidth) * minimapWidth * 0.3;
+                const displaySize = (island.size / worldWidth) * minimapWidth * 0.3 * zoom;
                 return (
                   <div
                     key={island.id}
@@ -207,7 +208,7 @@ export function Minimap({ islands, characters, panX, panY }: MinimapProps) {
       {isExpanded && (
         <>
           <div
-            className="fixed inset-0 z-40 bg-black/60"
+            className="fixed inset-0 z-40 bg-black/40"
             onClick={() => setIsExpanded(false)}
             onPointerDown={(e) => e.stopPropagation()}
             style={{ pointerEvents: "auto" }}

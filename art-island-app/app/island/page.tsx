@@ -316,7 +316,17 @@ export default function App() {
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setZoom((prev) => Math.min(Math.max(prev - e.deltaY * 0.001, 0.3), 3));
+    const newZoom = Math.min(Math.max(zoom - e.deltaY * 0.001, 0.3), 3);
+    const zoomRatio = newZoom / zoom;
+
+    // Mouse position relative to screen center
+    const mouseX = e.clientX - window.innerWidth / 2;
+    const mouseY = e.clientY - window.innerHeight / 2;
+
+    // Adjust pan so the point under the cursor stays fixed
+    setPanX((prev) => mouseX + (prev - mouseX) * zoomRatio);
+    setPanY((prev) => mouseY + (prev - mouseY) * zoomRatio);
+    setZoom(newZoom);
   };
 
   const handleCanvasPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -559,6 +569,7 @@ export default function App() {
           characters={characters}
           panX={panX}
           panY={panY}
+          zoom={zoom}
         />
       )}
     </div>
