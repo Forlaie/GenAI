@@ -1,19 +1,24 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion } from 'motion/react';
-import { Camera, Upload, X } from 'lucide-react';
+import { useState } from "react";
+import { motion } from "motion/react";
+import { Camera, Upload, X } from "lucide-react";
 
 interface UploadModalProps {
   onClose: () => void;
-  onSubmit: (imageFile: File, name: string, age: number) => void;
+  onSubmit: (imageFile: File | null, name: string, age: number) => void;
+  previewImageUrl?: string;
 }
 
-export function UploadModal({ onClose, onSubmit }: UploadModalProps) {
-  const [imageUrl, setImageUrl] = useState<string>('');
+export function UploadModal({
+  onClose,
+  onSubmit,
+  previewImageUrl,
+}: UploadModalProps) {
+  const [imageUrl, setImageUrl] = useState<string>(previewImageUrl || "");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
+  const [name, setName] = useState("");
+  const [age, setAge] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -26,7 +31,8 @@ export function UploadModal({ onClose, onSubmit }: UploadModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (imageFile && name && age) {
+    // Allow submission if we have an image (either from file or preview) and required fields
+    if ((imageFile || previewImageUrl) && name && age) {
       onSubmit(imageFile, name, parseInt(age));
       onClose();
     }
@@ -45,7 +51,7 @@ export function UploadModal({ onClose, onSubmit }: UploadModalProps) {
         initial={{ scale: 0.8, y: 50 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.8, y: 50 }}
-        transition={{ type: 'spring', damping: 25 }}
+        transition={{ type: "spring", damping: 25 }}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -55,40 +61,63 @@ export function UploadModal({ onClose, onSubmit }: UploadModalProps) {
           <X className="w-6 h-6" />
         </button>
 
-        <h2 className="text-3xl font-bold text-gray-800 mb-6">Add Your Drawing!</h2>
+        <h2 className="text-3xl font-bold text-gray-800 mb-6">
+          {previewImageUrl ? "Name Your Character" : "Add Your Drawing!"}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Upload Your Drawing
+              {previewImageUrl ? "Your Drawing" : "Upload Your Drawing"}
             </label>
-            <div className="relative">
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileChange}
-                className="hidden"
-                id="file-upload"
-              />
-              <label
-                htmlFor="file-upload"
-                className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors cursor-pointer"
-              >
-                <Camera className="w-6 h-6 text-gray-400" />
-                <Upload className="w-6 h-6 text-gray-400" />
-                <span className="text-gray-600">Take Photo or Choose File</span>
-              </label>
-            </div>
-            {imageUrl && (
+            {previewImageUrl ? (
+              // Show preview image when using a drawing
+              <div className="w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
+                <img
+                  src={previewImageUrl}
+                  alt="Your Drawing"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              // Show file upload when not using a drawing
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="flex items-center justify-center gap-2 w-full p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors cursor-pointer"
+                >
+                  <Camera className="w-6 h-6 text-gray-400" />
+                  <Upload className="w-6 h-6 text-gray-400" />
+                  <span className="text-gray-600">
+                    Take Photo or Choose File
+                  </span>
+                </label>
+              </div>
+            )}
+            {imageUrl && !previewImageUrl && (
               <div className="mt-4 w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
-                <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
               </div>
             )}
           </div>
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Character's Name
             </label>
             <input
@@ -103,7 +132,10 @@ export function UploadModal({ onClose, onSubmit }: UploadModalProps) {
           </div>
 
           <div>
-            <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="age"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Character's Age
             </label>
             <input
