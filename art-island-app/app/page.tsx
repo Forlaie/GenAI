@@ -6,8 +6,6 @@ import { Plus } from 'lucide-react';
 import { Character } from './components/Character';
 import { CharacterDetail } from './components/CharacterDetail';
 import { UploadModal } from './components/UploadModal';
-import { DatabaseInfo } from './components/DatabaseInfo';
-import { supabase, isSupabaseConfigured, type CharacterRow } from '@/lib/supabase';
 
 interface CharacterData {
   id: string;
@@ -23,23 +21,30 @@ export default function HomePage() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load characters from Supabase or localStorage on mount
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      loadCharactersFromSupabase();
-    } else {
-      loadCharactersFromLocalStorage();
-    }
+    loadCharacters();
   }, []);
+
+  const loadCharacters = async () => {
+    try {
+      const res = await fetch('/api/characters');
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+      setCharacters(data);
+    } catch (error) {
+      console.error('Error loading characters:', error);
+      // Fall back to localStorage
+      loadCharactersFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadCharactersFromLocalStorage = () => {
     try {
-      // Check if window is defined (Next.js SSR safety)
       if (typeof window !== 'undefined') {
         const stored = localStorage.getItem('art-island-characters');
-        if (stored) {
-          setCharacters(JSON.parse(stored));
-        }
+        if (stored) setCharacters(JSON.parse(stored));
       }
     } catch (error) {
       console.error('Error loading from localStorage:', error);
@@ -48,129 +53,32 @@ export default function HomePage() {
     }
   };
 
-  const saveCharactersToLocalStorage = (chars: CharacterData[]) => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('art-island-characters', JSON.stringify(chars));
-      }
-    } catch (error) {
-      console.error('Error saving to localStorage:', error);
-    }
-  };
-
-  const loadCharactersFromSupabase = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('characters')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      if (data) {
-        const loadedCharacters: CharacterData[] = data.map((char: CharacterRow) => ({
-          id: char.id,
-          imageUrl: char.image_url,
-          name: char.name,
-          age: char.age,
-          position: { x: char.position_x, y: char.position_y },
-        }));
-        setCharacters(loadedCharacters);
-      }
-    } catch (error) {
-      console.error('Error loading characters from Supabase:', error);
-      // Fall back to localStorage if Supabase fails
-      loadCharactersFromLocalStorage();
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleAddCharacter = async (imageFile: File, name: string, age: number) => {
-    if (isSupabaseConfigured) {
-      await handleAddCharacterSupabase(imageFile, name, age);
-    } else {
-      handleAddCharacterLocal(imageFile, name, age);
-    }
-  };
-
-  const handleAddCharacterLocal = (imageFile: File, name: string, age: number) => {
     try {
-      // Generate random position on the island platform
       const x = Math.random() * 70 + 10;
       const y = 15 + Math.random() * 10;
 
-      // Create object URL for local preview
-      const imageUrl = URL.createObjectURL(imageFile);
+      // Convert image to base64 to store it
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(imageFile);
+      });
 
-      const newCharacter: CharacterData = {
-        id: Date.now().toString(),
-        imageUrl,
-        name,
-        age,
-        position: { x, y },
-      };
+      const res = await fetch('/api/characters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          age,
+          imageUrl: base64,
+          position: { x, y },
+        }),
+      });
 
-      const updatedCharacters = [...characters, newCharacter];
-      setCharacters(updatedCharacters);
-      saveCharactersToLocalStorage(updatedCharacters);
-    } catch (error) {
-      console.error('Error adding character locally:', error);
-      alert('Failed to add character. Please try again.');
-    }
-  };
-
-  const handleAddCharacterSupabase = async (imageFile: File, name: string, age: number) => {
-    try {
-      // Generate random position on the island platform
-      const x = Math.random() * 70 + 10; // 10-80% from left
-      const y = 15 + Math.random() * 10; // Slight variation in vertical position
-
-      // Upload image to Supabase Storage
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('character-images')
-        .upload(filePath, imageFile);
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL for the uploaded image
-      const { data: urlData } = supabase.storage
-        .from('character-images')
-        .getPublicUrl(filePath);
-
-      const imageUrl = urlData.publicUrl;
-
-      // Save character data to database
-      const { data, error: dbError } = await supabase
-        .from('characters')
-        .insert([
-          {
-            name,
-            age,
-            image_url: imageUrl,
-            position_x: x,
-            position_y: y,
-          },
-        ])
-        .select()
-        .single();
-
-      if (dbError) throw dbError;
-
-      // Add to local state
-      const newCharacter: CharacterData = {
-        id: data.id,
-        imageUrl: data.image_url,
-        name: data.name,
-        age: data.age,
-        position: { x: data.position_x, y: data.position_y },
-      };
-
-      setCharacters([...characters, newCharacter]);
+      if (!res.ok) throw new Error('Failed to save');
+      const newCharacter = await res.json();
+      setCharacters(prev => [...prev, newCharacter]);
     } catch (error) {
       console.error('Error adding character:', error);
       alert('Failed to add character. Please try again.');
@@ -199,13 +107,8 @@ export default function HomePage() {
 
       {/* Island Platform */}
       <div className="absolute bottom-0 left-0 right-0 h-1/3">
-        {/* Island body */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4/5 h-40 bg-gradient-to-b from-green-600 to-green-800 rounded-t-full shadow-2xl" />
-
-        {/* Grass details */}
         <div className="absolute bottom-28 left-1/2 -translate-x-1/2 w-4/5 h-16 bg-green-500 rounded-t-full" />
-
-        {/* Water/Shadow */}
         <div className="absolute bottom-0 left-0 right-0 h-2 bg-blue-800/30" />
       </div>
 
@@ -263,9 +166,6 @@ export default function HomePage() {
           />
         )}
       </AnimatePresence>
-
-      {/* Database Info */}
-      <DatabaseInfo />
     </div>
   );
 }
