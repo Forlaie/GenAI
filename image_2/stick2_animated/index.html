@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Character Animator</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0ece4;
+    --ground: #c8b89a;
+    --ground-line: #a89070;
+    --panel-bg: #fff;
+    --text: #2a2016;
+    --accent: #e8622a;
+    --btn-bg: #2a2016;
+    --btn-text: #f0ece4;
+  }
+
+  body {
+    font-family: 'Space Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 1rem;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    color: var(--text);
+    opacity: 0.5;
+  }
+
+  .stage-wrap {
+    width: 100%;
+    max-width: 800px;
+    background: linear-gradient(to bottom, #d4e8f7 0%, #f0ece4 70%, var(--ground) 70%, var(--ground) 100%);
+    border-radius: 4px;
+    border: 1.5px solid var(--ground-line);
+    height: 320px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .ground-line {
+    position: absolute;
+    bottom: 80px;
+    left: 0; right: 0;
+    height: 2px;
+    background: var(--ground-line);
+  }
+
+  /* tick marks on ground */
+  .ground-line::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 0; right: 0; height: 40px;
+    background: repeating-linear-gradient(
+      90deg, transparent, transparent 38px,
+      rgba(0,0,0,0.08) 38px, rgba(0,0,0,0.08) 40px
+    );
+  }
+
+  #character {
+    position: absolute;
+    bottom: 82px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* ── Part base styles ── */
+  .part {
+    position: absolute;
+    transform-origin: var(--px) var(--py);
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .part img { display: block; width: 100%; height: 100%; }
+
+  /* ── Controls ── */
+  .controls {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+    max-width: 800px;
+  }
+
+  .btn {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.5rem 1rem;
+    border: 1.5px solid var(--btn-bg);
+    background: transparent;
+    color: var(--btn-bg);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .btn:hover, .btn.active {
+    background: var(--btn-bg);
+    color: var(--btn-text);
+  }
+
+  .btn.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: white;
+  }
+
+  .upload-row {
+    margin-top: 1.2rem;
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+  }
+
+  .upload-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+
+  /* shadow under character */
+  #shadow {
+    position: absolute;
+    bottom: 78px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px; height: 10px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    transition: width 0.1s;
+  }
+</style>
+</head>
+<body>
+
+<h1>Character Animator</h1>
+
+<div class="stage-wrap" id="stage">
+  <div class="ground-line"></div>
+  <div id="shadow"></div>
+  <div id="character"></div>
+</div>
+
+<div class="controls" id="anim-btns"></div>
+
+<script>
+// ── Rig data (injected by Python) ──────────────────────────────────────────
+const RIG = {
+  "character": {
+    "width": 303,
+    "height": 530
+  },
+  "parts": {
+    "full": {
+      "file": "parts/full.png",
+      "x": 0,
+      "y": 0,
+      "width": 303,
+      "height": 530,
+      "pivot_x": 151,
+      "pivot_y": 265,
+      "z": 0
+    },
+    "head": {
+      "file": "parts/head.png",
+      "x": 22,
+      "y": -8,
+      "width": 258,
+      "height": 175,
+      "pivot_x": 129,
+      "pivot_y": 175,
+      "z": 5
+    },
+    "torso": {
+      "file": "parts/torso.png",
+      "x": 22,
+      "y": 135,
+      "width": 258,
+      "height": 201,
+      "pivot_x": 129,
+      "pivot_y": 0,
+      "z": 3
+    },
+    "arm_left": {
+      "file": "parts/arm_left.png",
+      "x": -8,
+      "y": 87,
+      "width": 131,
+      "height": 239,
+      "pivot_x": 131,
+      "pivot_y": 0,
+      "z": 2
+    },
+    "arm_right": {
+      "file": "parts/arm_right.png",
+      "x": 179,
+      "y": 87,
+      "width": 132,
+      "height": 239,
+      "pivot_x": 0,
+      "pivot_y": 0,
+      "z": 2
+    },
+    "leg_left": {
+      "file": "parts/leg_left.png",
+      "x": 22,
+      "y": 299,
+      "width": 143,
+      "height": 239,
+      "pivot_x": 71,
+      "pivot_y": 0,
+      "z": 1
+    },
+    "leg_right": {
+      "file": "parts/leg_right.png",
+      "x": 137,
+      "y": 299,
+      "width": 143,
+      "height": 239,
+      "pivot_x": 71,
+      "pivot_y": 0,
+      "z": 1
+    }
+  }
+};
+
+// ── Animation definitions ──────────────────────────────────────────────────
+// Each animation is a function(t, dir) -> { part: {rotate, tx, ty, scaleX} }
+// t = time in seconds, dir = 1 (right) or -1 (left)
+// rotate in degrees, tx/ty in px, scaleX for horizontal flip
+
+const ANIMS = {
+
+  idle: {
+    label: "Idle",
+    loop: true,
+    fn(t) {
+      const bob   = Math.sin(t * 2)       * 2;
+      const sway  = Math.sin(t * 1.2)     * 1.5;
+      const breathe = Math.sin(t * 1.8)   * 1;
+      return {
+        head:      { ty: bob,     rotate: sway * 0.5 },
+        torso:     { ty: bob,     rotate: sway * 0.3 },
+        arm_left:  { rotate: -8  + Math.sin(t * 1.8) * 4,  ty: bob },
+        arm_right: { rotate:  8  + Math.sin(t * 1.8 + Math.PI) * 4, ty: bob },
+        leg_left:  { rotate:  2,  ty: bob },
+        leg_right: { rotate: -2,  ty: bob },
+      };
+    }
+  },
+
+  walk: {
+    label: "Walk",
+    loop: true,
+    walk: true,
+    walkSpeed: 120,
+    fn(t) {
+      const phase  = t * Math.PI * 2 * 1.8;
+      const bob    = Math.abs(Math.sin(phase)) * -4;
+      const swing  = 28;
+      return {
+        head:      { ty: bob, rotate: Math.sin(phase) * 2 },
+        torso:     { ty: bob, rotate: Math.sin(phase) * 3 },
+        arm_left:  { rotate:  Math.sin(phase)           * swing * 0.7, ty: bob },
+        arm_right: { rotate:  Math.sin(phase + Math.PI) * swing * 0.7, ty: bob },
+        leg_left:  { rotate:  Math.sin(phase)           * swing, ty: bob },
+        leg_right: { rotate:  Math.sin(phase + Math.PI) * swing, ty: bob },
+      };
+    }
+  },
+
+  run: {
+    label: "Run",
+    loop: true,
+    walk: true,
+    walkSpeed: 260,
+    fn(t) {
+      const phase = t * Math.PI * 2 * 3.2;
+      const bob   = Math.abs(Math.sin(phase)) * -8;
+      const swing = 44;
+      return {
+        head:      { ty: bob, rotate: Math.sin(phase) * 4 },
+        torso:     { ty: bob, rotate: Math.sin(phase) * 6, rotate: Math.sin(phase) * 5 },
+        arm_left:  { rotate:  Math.sin(phase + Math.PI) * swing, ty: bob },
+        arm_right: { rotate:  Math.sin(phase)           * swing, ty: bob },
+        leg_left:  { rotate:  Math.sin(phase)           * swing * 1.2, ty: bob },
+        leg_right: { rotate:  Math.sin(phase + Math.PI) * swing * 1.2, ty: bob },
+      };
+    }
+  },
+
+  wave: {
+    label: "Wave",
+    loop: true,
+    fn(t) {
+      const bob  = Math.sin(t * 2) * 2;
+      const wave = Math.sin(t * 6) * 35 - 55;
+      return {
+        head:      { ty: bob, rotate: Math.sin(t * 2) * 5 },
+        torso:     { ty: bob },
+        arm_left:  { rotate: -10, ty: bob },
+        arm_right: { rotate: wave, ty: bob },
+        leg_left:  { rotate:  4,  ty: bob },
+        leg_right: { rotate: -4,  ty: bob },
+      };
+    }
+  },
+
+  bounce: {
+    label: "Bounce",
+    loop: true,
+    fn(t) {
+      const phase  = t * Math.PI * 2 * 2;
+      const squash = Math.max(0, Math.sin(phase));
+      const ty     = -Math.max(0, Math.sin(phase)) * 30;
+      const scaleY = 1 - squash * 0.12;
+      const scaleX = 1 + squash * 0.06;
+      return {
+        head:      { ty, scaleX },
+        torso:     { ty, scaleX },
+        arm_left:  { ty, rotate: Math.sin(phase) * 20 },
+        arm_right: { ty, rotate: -Math.sin(phase) * 20 },
+        leg_left:  { ty: ty * 0.5, rotate: Math.sin(phase) * 10 },
+        leg_right: { ty: ty * 0.5, rotate: -Math.sin(phase) * 10 },
+      };
+    }
+  },
+
+  dance: {
+    label: "Dance",
+    loop: true,
+    fn(t) {
+      const phase  = t * Math.PI * 2 * 1.4;
+      const hop    = Math.abs(Math.sin(phase)) * -15;
+      const sway   = Math.sin(phase) * 12;
+      const snap   = Math.sin(phase * 2) * 20;
+      return {
+        head:      { rotate: sway * 0.6,  ty: hop },
+        torso:     { rotate: sway * 0.4,  ty: hop },
+        arm_left:  { rotate: -40 + snap,  ty: hop },
+        arm_right: { rotate:  40 - snap,  ty: hop },
+        leg_left:  { rotate:  sway * 0.8, ty: hop * 0.5 },
+        leg_right: { rotate: -sway * 0.8, ty: hop * 0.5 },
+      };
+    }
+  },
+
+  jump: {
+    label: "Jump",
+    loop: true,
+    fn(t) {
+      const phase  = (t % 1.2) / 1.2;  // 1.2s per jump
+      const arc    = Math.sin(phase * Math.PI) * -70;
+      const tuck   = phase > 0.2 && phase < 0.8;
+      const legRot = tuck ? 30 : 0;
+      const armRot = tuck ? -80 : 10;
+      return {
+        head:      { ty: arc },
+        torso:     { ty: arc },
+        arm_left:  { rotate:  armRot, ty: arc },
+        arm_right: { rotate: -armRot, ty: arc },
+        leg_left:  { rotate:  legRot, ty: arc },
+        leg_right: { rotate: -legRot, ty: arc },
+      };
+    }
+  },
+
+  spin: {
+    label: "Spin",
+    loop: true,
+    fn(t) {
+      const phase = t * Math.PI * 2 * 0.8;
+      const scaleX = Math.cos(phase);
+      return {
+        head:      { scaleX },
+        torso:     { scaleX },
+        arm_left:  { scaleX },
+        arm_right: { scaleX },
+        leg_left:  { scaleX },
+        leg_right: { scaleX },
+      };
+    }
+  },
+
+};
+
+// ── DOM setup ─────────────────────────────────────────────────────────────
+const charEl = document.getElementById('character');
+const shadow  = document.getElementById('shadow');
+const stage   = document.getElementById('stage');
+
+// Build part elements from rig
+const partEls = {};
+const stageH  = 320;
+const groundY = stageH - 82;  // px from top where feet land
+
+// Scale character to fit stage nicely
+const charH   = RIG.character.height;
+const charW   = RIG.character.width;
+const scale   = Math.min(200 / charH, 300 / charW, 1);
+
+// Sort parts by z
+const sortedParts = Object.entries(RIG.parts)
+  .filter(([n]) => n !== 'full')
+  .sort((a, b) => a[1].z - b[1].z);
+
+charEl.style.width  = (charW * scale) + 'px';
+charEl.style.height = (charH * scale) + 'px';
+
+for (const [name, part] of sortedParts) {
+  const el  = document.createElement('div');
+  el.className = 'part';
+  el.id = 'part-' + name;
+
+  const pw = part.pivot_x / part.width   * 100;
+  const ph = part.pivot_y / part.height  * 100;
+
+  el.style.cssText = `
+    left:   ${part.x * scale}px;
+    top:    ${part.y * scale}px;
+    width:  ${part.width  * scale}px;
+    height: ${part.height * scale}px;
+    --px:   ${pw.toFixed(1)}%;
+    --py:   ${ph.toFixed(1)}%;
+    z-index: ${part.z};
+  `;
+
+  const img = document.createElement('img');
+  img.src = part.file;
+  img.draggable = false;
+  el.appendChild(img);
+  charEl.appendChild(el);
+  partEls[name] = el;
+}
+
+// ── Animation buttons ──────────────────────────────────────────────────────
+const btnContainer = document.getElementById('anim-btns');
+let currentAnim = 'idle';
+
+for (const [key, anim] of Object.entries(ANIMS)) {
+  const btn = document.createElement('button');
+  btn.className = 'btn' + (key === 'idle' ? ' active' : '');
+  btn.textContent = anim.label;
+  btn.dataset.anim = key;
+  btn.addEventListener('click', () => {
+    currentAnim = key;
+    charX = stageW / 2;
+    direction = 1;
+    document.querySelectorAll('.btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.anim === key));
+  });
+  btnContainer.appendChild(btn);
+}
+
+// ── Main animation loop ────────────────────────────────────────────────────
+let t0       = null;
+let charX    = 0;
+let direction = 1;
+let stageW   = stage.offsetWidth;
+
+window.addEventListener('resize', () => { stageW = stage.offsetWidth; });
+
+function applyPose(pose) {
+  for (const [name, el] of Object.entries(partEls)) {
+    const p = pose[name] || {};
+    const rotate = p.rotate ?? 0;
+    const tx     = p.tx     ?? 0;
+    const ty     = p.ty     ?? 0;
+    const sX     = p.scaleX ?? 1;
+    el.style.transform =
+      `translateX(${tx}px) translateY(${ty}px) rotate(${rotate}deg) scaleX(${sX})`;
+  }
+}
+
+function tick(ts) {
+  if (!t0) { t0 = ts; charX = stageW / 2; }
+  const t   = (ts - t0) / 1000;
+  const dt  = Math.min((ts - (tick._last ?? ts)) / 1000, 0.05);
+  tick._last = ts;
+
+  const anim = ANIMS[currentAnim];
+  const pose = anim.fn(t, direction);
+  applyPose(pose);
+
+  // Walking
+  if (anim.walk) {
+    charX += direction * anim.walkSpeed * dt;
+    const charPx = charW * scale;
+    if (charX > stageW - charPx / 2 - 20) direction = -1;
+    if (charX < charPx / 2 + 20)           direction =  1;
+    charEl.style.transform =
+      `translateX(calc(${charX}px - 50%)) scaleX(${direction < 0 ? -1 : 1})`;
+    shadow.style.left = charX + 'px';
+  } else {
+    charEl.style.transform = 'translateX(-50%)';
+    shadow.style.left = '50%';
+  }
+
+  // Shadow pulse
+  const shadowW = 50 + Math.sin(t * 4) * 5;
+  shadow.style.width = shadowW + 'px';
+
+  requestAnimationFrame(tick);
+}
+
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
