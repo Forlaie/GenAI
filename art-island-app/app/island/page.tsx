@@ -381,7 +381,7 @@ export default function App() {
   if (loading) {
     return (
       <div className="size-full flex items-center justify-center bg-white">
-        <div className="text-2xl text-gray-500">Loading planets...</div>
+        <div className="text-2xl text-gray-500">Loading islands...</div>
       </div>
     );
   }
