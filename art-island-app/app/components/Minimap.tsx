@@ -236,7 +236,6 @@ export function Minimap({ islands, characters, panX, panY, zoom }: MinimapProps)
               style={{
                 width: expandedContentWidth,
                 height: expandedContentHeight,
-                // cursor: isDraggingMap.current ? "grabbing" : "grab",
               }}
               onPointerDown={handleExpandedPointerDown}
               onPointerMove={handleExpandedPointerMove}
@@ -288,7 +287,6 @@ export function Minimap({ islands, characters, panX, panY, zoom }: MinimapProps)
                       border: "2px solid #6366f1",
                       pointerEvents: "none",
                     }}
-                    // title={character.name}
                   />
                 );
               })}
