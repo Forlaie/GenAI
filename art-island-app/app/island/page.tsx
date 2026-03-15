@@ -521,15 +521,11 @@ export default function App() {
         {islands.map((planet, index) => {
           const displayPosition = getIslandDisplayPosition(
             index,
-<<<<<<< HEAD
             islands.length,
           );
           const imagePath = getIslandSkinImagePath(planet.skin);
           console.log(
             `Island ${planet.id} skin: ${planet.skin}, image: ${imagePath}`,
-=======
-            islands.length
->>>>>>> 0b0654633d076fd269a280cc16dc15cf0ec1e745
           );
 
           return (
