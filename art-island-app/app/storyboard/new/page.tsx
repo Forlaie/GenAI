@@ -466,7 +466,8 @@ export default function StoryboardPage() {
   const [stories, setStories] = useState<StoryData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>(
     [],
@@ -553,14 +554,15 @@ export default function StoryboardPage() {
   // Hydration-safe dark mode initialization
   useEffect(() => {
     const saved = localStorage.getItem("darkMode");
-    if (saved) {
-      setDarkMode(JSON.parse(saved));
-    }
+    setDarkMode(saved ? JSON.parse(saved) : false);
+    setHydrated(true);
   }, []);
 
   // Sync with localStorage when darkMode changes
   useEffect(() => {
-    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    if (darkMode !== null) {
+      localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    }
   }, [darkMode]);
 
   const selectedCharacters = useMemo(
@@ -920,7 +922,8 @@ export default function StoryboardPage() {
       <Navbar
         title="Create New Story"
         subtitle="Build a personalized story from your characters"
-        onDarkModeChange={setDarkMode}
+        darkMode={darkMode}
+        onDarkModeToggle={() => setDarkMode((p) => !p)}
         showBackButton={true}
       />
 

@@ -37,7 +37,8 @@ export default function StoryboardHomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeStory, setActiveStory] = useState<StoryData | null>(null);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   const bgColor = darkMode ? "#0f2336" : "#ffffff";
   const textMain = darkMode ? "#f0f6ff" : "#1a1a1a";
@@ -69,14 +70,15 @@ export default function StoryboardHomePage() {
   // Hydration-safe dark mode initialization
   useEffect(() => {
     const saved = localStorage.getItem("darkMode");
-    if (saved) {
-      setDarkMode(JSON.parse(saved));
-    }
+    setDarkMode(saved ? JSON.parse(saved) : false);
+    setHydrated(true);
   }, []);
 
   // Sync with localStorage when darkMode changes
   useEffect(() => {
-    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    if (darkMode !== null) {
+      localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    }
   }, [darkMode]);
 
   const storyCountLabel = useMemo(
@@ -100,7 +102,8 @@ export default function StoryboardHomePage() {
       <Navbar
         title="Stories"
         subtitle="Browse saved stories or create a new one."
-        onDarkModeChange={setDarkMode}
+        darkMode={darkMode}
+        onDarkModeToggle={() => setDarkMode((p) => !p)}
         showBackButton={true}
       />
 

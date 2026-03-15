@@ -127,7 +127,8 @@ export default function App() {
   const [islands, setIslands] = useState<IslandData[]>([]);
   const [nextIslandId, setNextIslandId] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   const [selectedCharacter, setSelectedCharacter] =
     useState<CharacterData | null>(null);
@@ -235,13 +236,14 @@ export default function App() {
   // Hydration-safe dark mode initialization
   useEffect(() => {
     const saved = localStorage.getItem("darkMode");
-    if (saved) {
-      setDarkMode(JSON.parse(saved));
-    }
+    setDarkMode(saved ? JSON.parse(saved) : false);
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    if (darkMode !== null) {
+      localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    }
   }, [darkMode]);
 
   useEffect(() => {

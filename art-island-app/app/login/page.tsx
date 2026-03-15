@@ -12,18 +12,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   // Hydration-safe dark mode initialization
   useEffect(() => {
     const saved = localStorage.getItem("darkMode");
-    if (saved) {
-      setDarkMode(JSON.parse(saved));
-    }
+    setDarkMode(saved ? JSON.parse(saved) : false);
+    setHydrated(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    if (darkMode !== null) {
+      localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    }
   }, [darkMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {

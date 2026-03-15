@@ -18,7 +18,8 @@ export default function RigPage() {
   const [selected, setSelected] = useState<Character | null>(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState<boolean | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   const bgColor = darkMode ? "#0f2336" : "#ffffff";
   const textMain = darkMode ? "#f0f6ff" : "#1a1a1a";
@@ -44,14 +45,15 @@ export default function RigPage() {
   // Hydration-safe dark mode initialization
   useEffect(() => {
     const saved = localStorage.getItem("darkMode");
-    if (saved) {
-      setDarkMode(JSON.parse(saved));
-    }
+    setDarkMode(saved ? JSON.parse(saved) : false);
+    setHydrated(true);
   }, []);
 
   // Sync with localStorage when darkMode changes
   useEffect(() => {
-    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    if (darkMode !== null) {
+      localStorage.setItem("darkMode", JSON.stringify(darkMode));
+    }
   }, [darkMode]);
 
   async function handleConfirm(
@@ -118,7 +120,8 @@ export default function RigPage() {
             ? "Place joints on the character, then save."
             : "Select a character to place joints on."
         }
-        onDarkModeChange={setDarkMode}
+        darkMode={darkMode}
+        onDarkModeToggle={() => setDarkMode((p) => !p)}
         showBackButton={true}
       />
 

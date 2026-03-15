@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { LogOut, Moon, Sun, ArrowLeft } from "lucide-react";
-import { useState, useEffect } from "react";
 
 interface NavbarProps {
   title: string;
   subtitle?: string;
   rightChild?: React.ReactNode;
-  onDarkModeChange?: (darkMode: boolean) => void;
+  darkMode: boolean;
+  onDarkModeToggle: () => void;
   showBackButton?: boolean;
 }
 
@@ -16,24 +16,11 @@ export function Navbar({
   title,
   subtitle,
   rightChild,
-  onDarkModeChange,
+  darkMode,
+  onDarkModeToggle,
   showBackButton,
 }: NavbarProps) {
   const router = useRouter();
-  const [darkMode, setDarkMode] = useState(false);
-
-  // Hydration-safe dark mode initialization
-  useEffect(() => {
-    const saved = localStorage.getItem("darkMode");
-    if (saved) {
-      setDarkMode(JSON.parse(saved));
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem("darkMode", JSON.stringify(darkMode));
-    onDarkModeChange?.(darkMode);
-  }, [darkMode, onDarkModeChange]);
 
   const bgColor = darkMode ? "rgba(15,35,54,0.9)" : "rgba(255,255,255,0.9)";
   const borderColor = darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
@@ -94,7 +81,7 @@ export function Navbar({
           </button>
         )}
         <button
-          onClick={() => setDarkMode(!darkMode)}
+          onClick={onDarkModeToggle}
           className="p-2 rounded-full transition-colors"
           style={{
             backgroundColor: btnBg,
