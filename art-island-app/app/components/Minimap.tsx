@@ -29,6 +29,18 @@ interface MinimapProps {
 }
 
 const ISLAND_SIZE = 620;
+const WORLD_COORD_SCALE = 160;
+
+const ISLAND_SKINS = [
+  { id: "dirt", imagePath: "/island.png" },
+  { id: "sand", imagePath: "/sand_island.png" },
+  { id: "stone", imagePath: "/stone_island.png" },
+];
+
+const getIslandSkinImagePath = (skinId?: string): string => {
+  const skin = ISLAND_SKINS.find((s) => s.id === skinId);
+  return skin?.imagePath || ISLAND_SKINS[0].imagePath;
+};
 
 export function Minimap({
   islands,
@@ -46,33 +58,24 @@ export function Minimap({
   const dragStart = useRef({ x: 0, y: 0 });
   const panStart = useRef({ x: 0, y: 0 });
 
-  const minimapWidth = 200;
-  const minimapHeight = 120;
+  const minimapWidth = 300;
+  const minimapHeight = 180;
   const expandedWidth = 900;
   const expandedHeight = 650;
 
   // < 1 means more zoomed out = more world space visible
   const EXPANDED_ZOOM_OUT = 0.6;
 
-  const getIslandPixelPosition = (index: number, total: number) => {
-    const columns = Math.max(1, Math.ceil(Math.sqrt(total)));
-    const rows = Math.ceil(total / columns);
-    const column = index % columns;
-    const row = Math.floor(index / columns);
-    const horizontalSpacing = ISLAND_SIZE + 180;
-    const verticalSpacing = ISLAND_SIZE + 220;
-    const offsetX = (column - (columns - 1) / 2) * horizontalSpacing;
-    const offsetY = (row - (rows - 1) / 2) * verticalSpacing;
-    return { x: offsetX, y: offsetY };
-  };
+  const getIslandWorldPosition = (island: IslandData) => ({
+    x: (island.x - 50) * WORLD_COORD_SCALE,
+    y: (island.y - 50) * WORLD_COORD_SCALE,
+  });
 
-  const islandPixelPositions = islands.map((island, index) =>
-    getIslandPixelPosition(index, islands.length),
-  );
+  const islandWorldPositions = islands.map(getIslandWorldPosition);
 
   const islandRadius = ISLAND_SIZE / 2;
-  const allX = islandPixelPositions.map((p) => p.x);
-  const allY = islandPixelPositions.map((p) => p.y);
+  const allX = islandWorldPositions.map((p) => p.x);
+  const allY = islandWorldPositions.map((p) => p.y);
 
   const minX = Math.min(...allX, -window.innerWidth / 2) - islandRadius;
   const maxX = Math.max(...allX, window.innerWidth / 2) + islandRadius;
@@ -86,8 +89,8 @@ export function Minimap({
   const scaleY = minimapHeight / worldHeight;
 
   const worldToUserCentricMinimap = (worldX: number, worldY: number) => ({
-    x: (worldX + panX / zoom) * scaleX * zoom + minimapWidth / 2,
-    y: (worldY + panY / zoom) * scaleY * zoom + minimapHeight / 2,
+    x: (worldX + panX / Math.max(zoom, 0.001)) * scaleX + minimapWidth / 2,
+    y: (worldY + panY / Math.max(zoom, 0.001)) * scaleY + minimapHeight / 2,
   });
 
   const expandedContentWidth = expandedWidth - 24;
@@ -123,7 +126,7 @@ export function Minimap({
     setExpandedPanY(panStart.current.y + (e.clientY - dragStart.current.y));
   };
 
-  const handleExpandedPointerUp = (e: React.PointerEvent) => {
+  const handleExpandedPointerUp = () => {
     isDraggingMap.current = false;
   };
 
@@ -144,7 +147,7 @@ export function Minimap({
             e.stopPropagation();
           }}
         >
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-3">
             <div
               className="relative overflow-hidden border border-gray-300 bg-gray-50"
               style={{
@@ -154,24 +157,29 @@ export function Minimap({
               }}
             >
               {islands.map((island, index) => {
-                const pixelPos = islandPixelPositions[index];
+                const worldPos = islandWorldPositions[index];
                 const minimapPos = worldToUserCentricMinimap(
-                  pixelPos.x,
-                  pixelPos.y,
+                  worldPos.x,
+                  worldPos.y,
                 );
-                const displaySize =
-                  (island.size / worldWidth) * minimapWidth * 0.3 * zoom;
+                const rawDisplayWidth =
+                  (island.size / worldWidth) * minimapWidth * 0.85;
+                const displayWidth = Math.max(28, rawDisplayWidth);
+                const displayHeight = displayWidth * 0.4;
+                const skinPath = getIslandSkinImagePath(island.skin);
                 return (
                   <div key={island.id} style={{ pointerEvents: "none" }}>
                     <div
-                      className="absolute rounded-full"
+                      className="absolute"
                       style={{
-                        left: minimapPos.x - displaySize / 2,
-                        top: minimapPos.y - displaySize / 2,
-                        width: displaySize,
-                        height: displaySize,
-                        backgroundColor: island.color,
-                        border: `1.5px solid ${island.border}`,
+                        left: minimapPos.x - displayWidth / 2,
+                        top: minimapPos.y - displayHeight / 2,
+                        width: displayWidth,
+                        height: displayHeight,
+                        backgroundImage: `url('${skinPath}')`,
+                        backgroundSize: "cover",
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "center top",
                         opacity: 0.8,
                         pointerEvents: "none",
                       }}
@@ -180,11 +188,11 @@ export function Minimap({
                     <span
                       className="absolute text-xs font-bold text-gray-800 text-center truncate"
                       style={{
-                        left: minimapPos.x - displaySize / 2,
-                        top: minimapPos.y + displaySize / 2 + 2,
-                        width: displaySize,
-                        fontSize: "7px",
-                        maxWidth: displaySize + 10,
+                        left: minimapPos.x - displayWidth / 2,
+                        top: minimapPos.y + displayHeight / 2 + 2,
+                        width: displayWidth,
+                        fontSize: "9px",
+                        maxWidth: displayWidth + 10,
                       }}
                     >
                       {island.label}
@@ -197,9 +205,13 @@ export function Minimap({
                 const island = islands.find((i) => i.id === character.islandId);
                 if (!island) return null;
                 const islandIndex = islands.indexOf(island);
-                const islandPixelPos = islandPixelPositions[islandIndex];
-                const charWorldX = islandPixelPos.x + character.position.x - 50;
-                const charWorldY = islandPixelPos.y + character.position.y - 50;
+                const islandWorldPos = islandWorldPositions[islandIndex];
+                const charWorldX =
+                  islandWorldPos.x +
+                  ((character.position.x - 50) / 100) * island.size;
+                const charWorldY =
+                  islandWorldPos.y +
+                  ((character.position.y - 50) / 100) * (island.size * 0.4);
                 const charMinimapPos = worldToUserCentricMinimap(
                   charWorldX,
                   charWorldY,
@@ -281,24 +293,28 @@ export function Minimap({
               onPointerLeave={handleExpandedPointerUp}
             >
               {islands.map((island, index) => {
-                const pixelPos = islandPixelPositions[index];
-                const pos = worldToExpanded(pixelPos.x, pixelPos.y);
-                const displaySize =
+                const worldPos = islandWorldPositions[index];
+                const pos = worldToExpanded(worldPos.x, worldPos.y);
+                const displayWidth =
                   (island.size / worldWidth) *
                   expandedContentWidth *
-                  0.3 *
+                  0.6 *
                   EXPANDED_ZOOM_OUT;
+                const displayHeight = displayWidth * 0.4;
+                const skinPath = getIslandSkinImagePath(island.skin);
                 return (
                   <div key={island.id} style={{ pointerEvents: "none" }}>
                     <div
-                      className="absolute rounded-full"
+                      className="absolute"
                       style={{
-                        left: pos.x - displaySize / 2,
-                        top: pos.y - displaySize / 2,
-                        width: displaySize,
-                        height: displaySize,
-                        backgroundColor: island.color,
-                        border: `2px solid ${island.border}`,
+                        left: pos.x - displayWidth / 2,
+                        top: pos.y - displayHeight / 2,
+                        width: displayWidth,
+                        height: displayHeight,
+                        backgroundImage: `url('${skinPath}')`,
+                        backgroundSize: "cover",
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "center top",
                         opacity: 0.8,
                         pointerEvents: "none",
                       }}
@@ -307,11 +323,11 @@ export function Minimap({
                     <span
                       className="absolute text-xs font-bold text-gray-800 text-center truncate"
                       style={{
-                        left: pos.x - displaySize / 2,
-                        top: pos.y + displaySize / 2 + 4,
-                        width: displaySize,
+                        left: pos.x - displayWidth / 2,
+                        top: pos.y + displayHeight / 2 + 4,
+                        width: displayWidth,
                         fontSize: "9px",
-                        maxWidth: displaySize + 10,
+                        maxWidth: displayWidth + 10,
                       }}
                     >
                       {island.label}
@@ -324,9 +340,13 @@ export function Minimap({
                 const island = islands.find((i) => i.id === character.islandId);
                 if (!island) return null;
                 const islandIndex = islands.indexOf(island);
-                const islandPixelPos = islandPixelPositions[islandIndex];
-                const charWorldX = islandPixelPos.x + character.position.x - 50;
-                const charWorldY = islandPixelPos.y + character.position.y - 50;
+                const islandWorldPos = islandWorldPositions[islandIndex];
+                const charWorldX =
+                  islandWorldPos.x +
+                  ((character.position.x - 50) / 100) * island.size;
+                const charWorldY =
+                  islandWorldPos.y +
+                  ((character.position.y - 50) / 100) * (island.size * 0.4);
                 const pos = worldToExpanded(charWorldX, charWorldY);
                 return (
                   <div
