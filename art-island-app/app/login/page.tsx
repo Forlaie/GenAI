@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { Moon, Sun } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -11,6 +12,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
+
+  // Hydration-safe dark mode initialization
+  useEffect(() => {
+    const saved = localStorage.getItem("darkMode");
+    if (saved) {
+      setDarkMode(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+  }, [darkMode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,20 +56,59 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="size-full flex items-center justify-center bg-white">
+    <div
+      className="size-full flex items-center justify-center"
+      style={{
+        backgroundColor: darkMode ? "#0f2336" : "#ffffff",
+      }}
+    >
+      {/* Top right theme toggle */}
+      <button
+        onClick={() => setDarkMode(!darkMode)}
+        className="absolute top-4 right-4 p-2 rounded-full transition-colors"
+        style={{
+          backgroundColor: darkMode
+            ? "rgba(255,255,255,0.1)"
+            : "rgba(0,0,0,0.05)",
+          color: darkMode ? "#f0f6ff" : "#1a1a1a",
+        }}
+        title="Toggle dark mode"
+      >
+        {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+      </button>
+
       {/* Back button - top left */}
       <button
         onClick={() => router.push("/")}
-        className="absolute top-4 left-4 bg-white border border-gray-200 shadow-sm text-gray-600 hover:text-gray-900 text-sm flex items-center gap-1 px-3 py-2 rounded hover:-translate-y-0.5 transition-all"
+        className="absolute top-4 left-4 text-sm flex items-center gap-1 px-3 py-2 rounded transition-all hover:-translate-y-0.5"
+        style={{
+          backgroundColor: darkMode
+            ? "rgba(255,255,255,0.1)"
+            : "rgba(0,0,0,0.05)",
+          color: darkMode ? "#7ea8c4" : "#888780",
+          border: `1px solid ${darkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`,
+        }}
       >
         ← Back
       </button>
 
-      <div className="relative z-10 bg-white border border-gray-200 rounded p-8 w-full max-w-sm shadow-lg">
-        <h2 className="text-3xl font-bold text-black text-center mb-2">
+      <div
+        className="relative z-10 rounded p-8 w-full max-w-sm shadow-lg border"
+        style={{
+          backgroundColor: darkMode ? "#1e3a52" : "#ffffff",
+          borderColor: darkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)",
+        }}
+      >
+        <h2
+          className="text-3xl font-bold text-center mb-2"
+          style={{ color: darkMode ? "#f0f6ff" : "#000000" }}
+        >
           {isSignup ? "Create Account" : "Welcome Back"}
         </h2>
-        <p className="text-gray-600 text-center mb-8 text-sm">
+        <p
+          className="text-center mb-8 text-sm"
+          style={{ color: darkMode ? "#7ea8c4" : "#888780" }}
+        >
           {isSignup
             ? "Sign up to visit the floating islands"
             : "Log in to see your characters"}
@@ -67,50 +120,66 @@ export default function LoginPage() {
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-4 py-3 rounded bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-black focus:ring-2 focus:ring-black/20 transition-colors"
+            required
             style={{
-              boxShadow: "none",
+              backgroundColor: darkMode ? "rgba(255,255,255,0.05)" : "#f3f4f6",
+              borderColor: darkMode ? "rgba(255,255,255,0.1)" : "#d1d5db",
+              color: darkMode ? "#f0f6ff" : "#000000",
             }}
+            className="w-full px-4 py-3 rounded border placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-colors"
             onFocus={(e) => {
-              (e.target as HTMLInputElement).style.boxShadow =
-                "0 0 0 2px rgba(0, 0, 0, 0.1), 0 0 10px rgba(0, 255, 0, 0.4)";
+              if (darkMode) {
+                e.currentTarget.style.borderColor = "rgba(96, 165, 250, 0.5)";
+              }
             }}
             onBlur={(e) => {
-              (e.target as HTMLInputElement).style.boxShadow = "none";
+              e.currentTarget.style.borderColor = darkMode
+                ? "rgba(255,255,255,0.1)"
+                : "#d1d5db";
             }}
-            required
           />
           <input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-black focus:ring-2 focus:ring-black/20 transition-colors"
+            required
             style={{
-              boxShadow: "none",
+              backgroundColor: darkMode ? "rgba(255,255,255,0.05)" : "#f3f4f6",
+              borderColor: darkMode ? "rgba(255,255,255,0.1)" : "#d1d5db",
+              color: darkMode ? "#f0f6ff" : "#000000",
             }}
+            className="w-full px-4 py-3 rounded border placeholder-gray-400 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-colors"
             onFocus={(e) => {
-              (e.target as HTMLInputElement).style.boxShadow =
-                "0 0 0 2px rgba(0, 0, 0, 0.1), 0 0 10px rgba(0, 255, 0, 0.4)";
+              if (darkMode) {
+                e.currentTarget.style.borderColor = "rgba(96, 165, 250, 0.5)";
+              }
             }}
             onBlur={(e) => {
-              (e.target as HTMLInputElement).style.boxShadow = "none";
+              e.currentTarget.style.borderColor = darkMode
+                ? "rgba(255,255,255,0.1)"
+                : "#d1d5db";
             }}
-            required
           />
 
-          {error && <p className="text-red-600 text-sm text-center">{error}</p>}
+          {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white font-bold py-3 rounded transition-all disabled:opacity-50"
+            className="w-full text-white font-bold py-3 rounded transition-all disabled:opacity-50"
+            style={{
+              backgroundColor: darkMode ? "#2a4d6b" : "#000000",
+            }}
           >
             {loading ? "Loading..." : isSignup ? "Sign Up" : "Log In"}
           </button>
         </form>
 
-        <p className="text-gray-600 text-center mt-6 text-sm">
+        <p
+          className="text-center mt-6 text-sm"
+          style={{ color: darkMode ? "#7ea8c4" : "#888780" }}
+        >
           {isSignup ? "Already have an account?" : "Don't have an account?"}
           <button
             onClick={() => {
@@ -119,7 +188,8 @@ export default function LoginPage() {
               setUsername("");
               setPassword("");
             }}
-            className="text-black-600 hover:underline ml-1 font-medium "
+            className="hover:underline ml-1 font-medium transition-colors"
+            style={{ color: darkMode ? "#60a5fa" : "#000000" }}
           >
             {isSignup ? "Log In" : "Sign Up"}
           </button>

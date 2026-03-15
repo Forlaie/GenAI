@@ -232,6 +232,18 @@ export default function App() {
     loadIslands();
   }, [router]);
 
+  // Hydration-safe dark mode initialization
+  useEffect(() => {
+    const saved = localStorage.getItem("darkMode");
+    if (saved) {
+      setDarkMode(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+  }, [darkMode]);
+
   useEffect(() => {
     if (!selectedCharacter) return;
     if (flyRafRef.current) {

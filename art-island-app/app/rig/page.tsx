@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Navbar } from "@/app/components/Navbar";
 import JointEditor from "@/app/components/JointEditor";
 
 interface Character {
@@ -17,6 +18,13 @@ export default function RigPage() {
   const [selected, setSelected] = useState<Character | null>(null);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [darkMode, setDarkMode] = useState(false);
+
+  const bgColor = darkMode ? "#0f2336" : "#ffffff";
+  const textMain = darkMode ? "#f0f6ff" : "#1a1a1a";
+  const textMuted = darkMode ? "#7ea8c4" : "#888780";
+  const borderColor = darkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+  const hoverBg = darkMode ? "rgba(255,255,255,0.05)" : "#f3f4f6";
 
   useEffect(() => {
     fetch("/api/characters")
@@ -33,6 +41,19 @@ export default function RigPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Hydration-safe dark mode initialization
+  useEffect(() => {
+    const saved = localStorage.getItem("darkMode");
+    if (saved) {
+      setDarkMode(JSON.parse(saved));
+    }
+  }, []);
+
+  // Sync with localStorage when darkMode changes
+  useEffect(() => {
+    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+  }, [darkMode]);
+
   async function handleConfirm(
     joints: Record<string, { x: number; y: number }>,
   ) {
@@ -46,15 +67,21 @@ export default function RigPage() {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-400">Loading characters...</p>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: bgColor }}
+      >
+        <p style={{ color: textMuted }}>Loading characters...</p>
       </div>
     );
 
   if (saved)
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-xl text-gray-700">
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ backgroundColor: bgColor }}
+      >
+        <p className="text-xl" style={{ color: textMain }}>
           Joints saved for <span className="font-medium">{selected?.name}</span>
           !
         </p>
@@ -70,7 +97,11 @@ export default function RigPage() {
           </button>
           <Link
             href="/island"
-            className="px-5 py-2 bg-gray-100 text-gray-600 rounded-full text-sm hover:bg-gray-200 transition-colors"
+            className="px-5 py-2 rounded-full text-sm transition-colors"
+            style={{
+              backgroundColor: hoverBg,
+              color: textMuted,
+            }}
           >
             Back to island
           </Link>
@@ -79,35 +110,29 @@ export default function RigPage() {
     );
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header */}
-      <div className="relative border-b px-6 py-4 flex items-center justify-center">
-        <Link
-          href="/island"
-          className="absolute top-4 left-4 bg-white border border-gray-200 shadow-sm text-gray-600 hover:text-gray-900 text-sm flex items-center gap-1 px-3 py-2 rounded hover:-translate-y-0.5 transition-all"
-        >
-          ← Back
-        </Link>
-        <div className="text-center">
-          <h1 className="text-lg font-medium text-gray-800">
-            {selected ? `Rigging: ${selected.name}` : "Rig a character"}
-          </h1>
-          <p className="text-sm text-gray-400 mt-0.5">
-            {selected
-              ? "Place joints on the character, then save."
-              : "Select a character to place joints on."}
-          </p>
-        </div>
-      </div>
+    <div className="min-h-screen" style={{ backgroundColor: bgColor }}>
+      <Navbar
+        title={selected ? `Rigging: ${selected.name}` : "Rig a character"}
+        subtitle={
+          selected
+            ? "Place joints on the character, then save."
+            : "Select a character to place joints on."
+        }
+        onDarkModeChange={setDarkMode}
+        showBackButton={true}
+      />
 
       {!selected ? (
-        <div className="p-6">
+        <div className="p-6 pt-20">
           {characters.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-gray-300 text-lg">No characters yet.</p>
+              <p className="text-lg" style={{ color: textMuted }}>
+                No characters yet.
+              </p>
               <Link
                 href="/island"
-                className="text-sm text-blue-400 hover:underline mt-2 inline-block"
+                className="text-sm hover:underline mt-2 inline-block"
+                style={{ color: "#60a5fa" }}
               >
                 Go add one first
               </Link>
@@ -118,9 +143,29 @@ export default function RigPage() {
                 <button
                   key={char.id}
                   onClick={() => setSelected(char)}
-                  className="group flex flex-col items-center gap-2 p-3 rounded-xl border border-transparent hover:border-blue-200 hover:bg-blue-50 transition-all text-left"
+                  className="group flex flex-col items-center gap-2 p-3 rounded-xl border transition-all text-left"
+                  style={{
+                    borderColor: "transparent",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor =
+                      "rgba(96, 165, 250, 0.5)";
+                    e.currentTarget.style.backgroundColor = darkMode
+                      ? "rgba(59, 130, 246, 0.1)"
+                      : "#eff6ff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "transparent";
+                    e.currentTarget.style.backgroundColor = "transparent";
+                  }}
                 >
-                  <div className="w-full aspect-square rounded-lg overflow-hidden bg-gray-50 border">
+                  <div
+                    className="w-full aspect-square rounded-lg overflow-hidden border"
+                    style={{
+                      backgroundColor: hoverBg,
+                      borderColor,
+                    }}
+                  >
                     <img
                       src={char.imageUrl}
                       alt={char.name}
@@ -128,10 +173,15 @@ export default function RigPage() {
                     />
                   </div>
                   <div className="w-full">
-                    <p className="text-sm font-medium text-gray-700 truncate">
+                    <p
+                      className="text-sm font-medium truncate"
+                      style={{ color: textMain }}
+                    >
                       {char.name}
                     </p>
-                    <p className="text-xs text-gray-400">Age {char.age}</p>
+                    <p className="text-xs" style={{ color: textMuted }}>
+                      Age {char.age}
+                    </p>
                   </div>
                 </button>
               ))}

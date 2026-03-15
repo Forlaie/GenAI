@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { Navbar } from "@/app/components/Navbar";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -88,7 +89,18 @@ const STORY_LENGTHS = [
 ];
 
 const EMOJI_OPTIONS = [
-  "💡","🌙","🦋","🐣","🌺","🎯","🧩","💪","🌍","❤️","🎨","🏆",
+  "💡",
+  "🌙",
+  "🦋",
+  "🐣",
+  "🌺",
+  "🎯",
+  "🧩",
+  "💪",
+  "🌍",
+  "❤️",
+  "🎨",
+  "🏆",
 ];
 
 function nanoid() {
@@ -343,15 +355,42 @@ function StoryCard({
 
 // ─── StepLabel ────────────────────────────────────────────────────────────────
 
-function StepLabel({ n, label, sub }: { n: number; label: string; sub?: string }) {
+function StepLabel({
+  n,
+  label,
+  sub,
+}: {
+  n: number;
+  label: string;
+  sub?: string;
+}) {
+  const darkMode = false;
   return (
     <div className="flex items-start gap-2.5">
-      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-700">
+      <span
+        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+        style={{
+          backgroundColor: darkMode ? "rgba(96, 165, 250, 0.2)" : "#fff3cd",
+          color: darkMode ? "#60a5fa" : "#856404",
+        }}
+      >
         {n}
       </span>
       <div>
-        <p className="text-sm font-semibold text-stone-800">{label}</p>
-        {sub && <p className="text-xs text-stone-400 mt-0.5">{sub}</p>}
+        <p
+          className="text-sm font-semibold"
+          style={{ color: darkMode ? "#f0f6ff" : "#1a1a1a" }}
+        >
+          {label}
+        </p>
+        {sub && (
+          <p
+            className="text-xs mt-0.5"
+            style={{ color: darkMode ? "#7ea8c4" : "#888780" }}
+          >
+            {sub}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -385,7 +424,9 @@ function Field({
       <label className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold uppercase tracking-widest text-stone-400">
         {label}
         {optional && (
-          <span className="normal-case font-normal text-stone-300">optional</span>
+          <span className="normal-case font-normal text-stone-300">
+            optional
+          </span>
         )}
         {required && (
           <span className="text-red-400 normal-case font-normal">required</span>
@@ -425,8 +466,11 @@ export default function StoryboardPage() {
   const [stories, setStories] = useState<StoryData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
 
-  const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>([]);
+  const [selectedCharacterIds, setSelectedCharacterIds] = useState<string[]>(
+    [],
+  );
   const [selectedConcept, setSelectedConcept] = useState("");
 
   const [childName, setChildName] = useState("");
@@ -459,12 +503,12 @@ export default function StoryboardPage() {
 
   const allThemes = useMemo(
     () => [...PRESET_THEMES, ...customThemes],
-    [customThemes]
+    [customThemes],
   );
 
   const allSettings = useMemo(
     () => [...PRESET_SETTINGS, ...customSettings],
-    [customSettings]
+    [customSettings],
   );
 
   // ── Load ──────────────────────────────────────────────────────────────────
@@ -484,12 +528,13 @@ export default function StoryboardPage() {
       }
       if (!charsRes.ok) throw new Error("Failed to load characters");
       if (!storiesRes.ok) throw new Error("Failed to load stories");
-      const [charsData, storiesData, themesData, settingsData] = await Promise.all([
-        charsRes.json(),
-        storiesRes.json(),
-        themesRes.ok ? themesRes.json() : Promise.resolve([]),
-        settingsRes.ok ? settingsRes.json() : Promise.resolve([]),
-      ]);
+      const [charsData, storiesData, themesData, settingsData] =
+        await Promise.all([
+          charsRes.json(),
+          storiesRes.json(),
+          themesRes.ok ? themesRes.json() : Promise.resolve([]),
+          settingsRes.ok ? settingsRes.json() : Promise.resolve([]),
+        ]);
       setCharacters(charsData);
       setStories(storiesData);
       setCustomThemes(themesData);
@@ -505,14 +550,27 @@ export default function StoryboardPage() {
     void loadData();
   }, [loadData]);
 
+  // Hydration-safe dark mode initialization
+  useEffect(() => {
+    const saved = localStorage.getItem("darkMode");
+    if (saved) {
+      setDarkMode(JSON.parse(saved));
+    }
+  }, []);
+
+  // Sync with localStorage when darkMode changes
+  useEffect(() => {
+    localStorage.setItem("darkMode", JSON.stringify(darkMode));
+  }, [darkMode]);
+
   const selectedCharacters = useMemo(
     () => characters.filter((c) => selectedCharacterIds.includes(c.id)),
-    [characters, selectedCharacterIds]
+    [characters, selectedCharacterIds],
   );
 
   const toggleCharacter = (id: string) =>
     setSelectedCharacterIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
 
   const canGenerate =
@@ -533,8 +591,8 @@ export default function StoryboardPage() {
       const updated = await res.json();
       setCharacters((prev) =>
         prev.map((c) =>
-          c.id === characterId ? { ...c, memories: updated.memories } : c
-        )
+          c.id === characterId ? { ...c, memories: updated.memories } : c,
+        ),
       );
     }
   };
@@ -549,8 +607,8 @@ export default function StoryboardPage() {
       const updated = await res.json();
       setCharacters((prev) =>
         prev.map((c) =>
-          c.id === characterId ? { ...c, memories: updated.memories } : c
-        )
+          c.id === characterId ? { ...c, memories: updated.memories } : c,
+        ),
       );
     }
   };
@@ -678,7 +736,9 @@ export default function StoryboardPage() {
   // ── Generate ──────────────────────────────────────────────────────────────
   const handleGenerate = async () => {
     if (!canGenerate) {
-      setError("Please select characters, a lesson, a setting, and your child's age.");
+      setError(
+        "Please select characters, a lesson, a setting, and your child's age.",
+      );
       return;
     }
     try {
@@ -687,9 +747,11 @@ export default function StoryboardPage() {
       setGeneratedStory(null);
 
       const conceptLabel =
-        allThemes.find((t) => t.id === selectedConcept)?.label ?? selectedConcept;
+        allThemes.find((t) => t.id === selectedConcept)?.label ??
+        selectedConcept;
       const settingLabel =
-        allSettings.find((s) => s.id === selectedSetting)?.label ?? selectedSetting;
+        allSettings.find((s) => s.id === selectedSetting)?.label ??
+        selectedSetting;
 
       const res = await fetch("/api/story-generate", {
         method: "POST",
@@ -715,7 +777,7 @@ export default function StoryboardPage() {
         throw new Error(
           errorPayload?.error ||
             errorPayload?.message ||
-            "Story generation failed."
+            "Story generation failed.",
         );
       }
 
@@ -755,7 +817,7 @@ export default function StoryboardPage() {
                     : {},
               }),
             }).then(async (r) => (r.ok ? r.json() : null));
-          })
+          }),
         );
 
         const updatedById = new Map<string, CharacterData>();
@@ -766,9 +828,7 @@ export default function StoryboardPage() {
         }
 
         if (updatedById.size > 0) {
-          setCharacters((prev) =>
-            prev.map((c) => updatedById.get(c.id) ?? c)
-          );
+          setCharacters((prev) => prev.map((c) => updatedById.get(c.id) ?? c));
         }
       }
 
@@ -787,7 +847,8 @@ export default function StoryboardPage() {
       setSaving(true);
       setError(null);
       const conceptLabel =
-        allThemes.find((t) => t.id === selectedConcept)?.label ?? selectedConcept;
+        allThemes.find((t) => t.id === selectedConcept)?.label ??
+        selectedConcept;
       const res = await fetch("/api/stories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -805,7 +866,10 @@ export default function StoryboardPage() {
           childName,
         }),
       });
-      if (res.status === 401) { router.push("/login"); return; }
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
       if (!res.ok) {
         const p = await res.json().catch(() => null);
         throw new Error(p?.error ?? "Failed to save story");
@@ -829,71 +893,92 @@ export default function StoryboardPage() {
 
   // ── Loading ───────────────────────────────────────────────────────────────
   if (loading) {
+    const bgColor = darkMode ? "#0f2336" : "#ffffff";
+    const textMuted = darkMode ? "#7ea8c4" : "#888780";
     return (
-      <div className="min-h-screen flex items-center justify-center bg-stone-50">
-        <p className="text-stone-400 text-sm animate-pulse">Loading storyboard…</p>
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: bgColor }}
+      >
+        <p className="text-sm animate-pulse" style={{ color: textMuted }}>
+          Loading storyboard…
+        </p>
       </div>
     );
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
-  return (
-    <div className="min-h-screen bg-stone-50 font-sans">
-      {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-stone-200 bg-white/90 backdrop-blur px-5 py-3.5">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <div>
-            <h1 className="font-serif text-xl font-bold text-stone-900 tracking-tight">
-              Create New Story
-            </h1>
-            <p className="text-[11px] text-stone-400 mt-0.5">
-              Build a personalized story from your characters
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/storyboard"
-              className="rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition"
-            >
-              ← Stories
-            </Link>
-            <Link
-              href="/island"
-              className="rounded-full border border-stone-200 bg-white px-3.5 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 transition"
-            >
-              Island
-            </Link>
-          </div>
-        </div>
-      </header>
+  const bgColor = darkMode ? "#0f2336" : "#ffffff";
+  const textMain = darkMode ? "#f0f6ff" : "#1a1a1a";
+  const textMuted = darkMode ? "#7ea8c4" : "#888780";
+  const borderColor = darkMode ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)";
+  const cardBg = darkMode ? "#1e3a52" : "#f9fafb";
+  const inputBg = darkMode ? "rgba(255,255,255,0.05)" : "#ffffff";
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 space-y-6">
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: bgColor }}>
+      <Navbar
+        title="Create New Story"
+        subtitle="Build a personalized story from your characters"
+        onDarkModeChange={setDarkMode}
+        showBackButton={true}
+      />
+
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 space-y-6 pt-20">
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div
+            className="rounded-xl border px-4 py-3 text-sm"
+            style={{
+              borderColor: darkMode ? "rgba(248, 113, 113, 0.3)" : "#fecaca",
+              backgroundColor: darkMode ? "rgba(127, 29, 29, 0.2)" : "#fee2e2",
+              color: darkMode ? "#fca5a5" : "#991b1b",
+            }}
+          >
             {error}
           </div>
         )}
 
         {/* Builder card */}
-        <div className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-          <div className="border-b border-stone-100 px-6 py-4">
-            <h2 className="text-sm font-semibold text-stone-900">Build a story</h2>
-            <p className="text-xs text-stone-400 mt-0.5">
-              Complete each step - we&apos;ll weave your characters&apos; memories into a personalised story.
+        <div
+          className="rounded-2xl border shadow-sm overflow-hidden"
+          style={{
+            borderColor: borderColor,
+            backgroundColor: darkMode ? "#12425c" : "#ffffff",
+          }}
+        >
+          <div
+            className="border-b px-6 py-4"
+            style={{
+              borderColor: borderColor,
+            }}
+          >
+            <h2 className="text-sm font-semibold" style={{ color: textMain }}>
+              Build a story
+            </h2>
+            <p className="text-xs mt-0.5" style={{ color: textMuted }}>
+              Complete each step - we&apos;ll weave your characters&apos;
+              memories into a personalised story.
             </p>
           </div>
 
-          <div className="divide-y divide-stone-100">
+          <div
+            style={{
+              borderColor: borderColor,
+            }}
+          >
             {/* Step 1 — Characters */}
             <section className="px-6 py-5 space-y-3">
               <StepLabel
                 n={1}
                 label="Choose characters"
                 sub="Click to select · expand each card to view and add memories"
+                darkMode={darkMode}
+                textMain={textMain}
+                textMuted={textMuted}
               />
 
               {characters.length === 0 ? (
-                <p className="text-sm text-stone-400">
+                <p className="text-sm" style={{ color: textMuted }}>
                   No characters yet — create some on your island first.
                 </p>
               ) : (
@@ -927,7 +1012,9 @@ export default function StoryboardPage() {
                       .filter((c) => c.memories.length > 0)
                       .map((c) => (
                         <div key={c.id} className="text-xs text-stone-600">
-                          <span className="font-medium text-stone-700">{c.name}:</span>{" "}
+                          <span className="font-medium text-stone-700">
+                            {c.name}:
+                          </span>{" "}
                           {c.memories.map((m) => m.text).join(", ")}
                         </div>
                       ))}
@@ -952,11 +1039,13 @@ export default function StoryboardPage() {
                     selected={selectedConcept === theme.id}
                     onToggle={() =>
                       setSelectedConcept(
-                        selectedConcept === theme.id ? "" : theme.id
+                        selectedConcept === theme.id ? "" : theme.id,
                       )
                     }
                     onDelete={
-                      theme.custom ? () => handleDeleteTheme(theme.id) : undefined
+                      theme.custom
+                        ? () => handleDeleteTheme(theme.id)
+                        : undefined
                     }
                   />
                 ))}
@@ -976,7 +1065,8 @@ export default function StoryboardPage() {
               {showThemeForm && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
                   <p className="text-xs text-amber-700 font-medium">
-                    Create a recurring theme - it&apos;ll be saved and ready to use every time.
+                    Create a recurring theme - it&apos;ll be saved and ready to
+                    use every time.
                   </p>
                   {/* Emoji row */}
                   <div className="flex flex-wrap gap-1">
@@ -1072,7 +1162,9 @@ export default function StoryboardPage() {
               <div>
                 <label className="mb-2 block text-[11px] font-semibold text-stone-400 uppercase tracking-widest">
                   Setting{" "}
-                  <span className="text-red-400 normal-case font-normal">required</span>
+                  <span className="text-red-400 normal-case font-normal">
+                    required
+                  </span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {allSettings.map((s) => (
@@ -1170,8 +1262,12 @@ export default function StoryboardPage() {
                           : "border-stone-200 bg-white text-stone-600 hover:border-stone-300"
                       }`}
                     >
-                      <span className="block text-sm font-semibold">{l.label}</span>
-                      <span className="block text-[11px] opacity-60 mt-0.5">{l.desc}</span>
+                      <span className="block text-sm font-semibold">
+                        {l.label}
+                      </span>
+                      <span className="block text-[11px] opacity-60 mt-0.5">
+                        {l.desc}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -1316,7 +1412,9 @@ export default function StoryboardPage() {
                   className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-medium text-amber-700 hover:bg-amber-100"
                   title="Narrate story"
                 >
-                  {narrating && narratingId === activeStory.id ? "🔈 Stop" : "🔊 Narrate"}
+                  {narrating && narratingId === activeStory.id
+                    ? "🔈 Stop"
+                    : "🔊 Narrate"}
                 </button>
                 <button
                   type="button"
