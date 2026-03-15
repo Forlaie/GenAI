@@ -80,7 +80,7 @@ export function UploadModal({
         name,
         creationTimestamp,
         selectedIslandId,
-        personality,
+        personality
       );
     }
   };

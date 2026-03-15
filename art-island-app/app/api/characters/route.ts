@@ -11,13 +11,16 @@ const characterSchema = new mongoose.Schema({
   imageUrl: String,
   position: { x: Number, y: Number },
   islandId: Number,
-  joints: { type: mongoose.Schema.Types.Mixed, default: null }, // ← add
-  riggedAt: { type: Date, default: null }, // ← add
+  joints: { type: mongoose.Schema.Types.Mixed, default: null },
+  riggedAt: { type: Date, default: null },
+  personality: { type: mongoose.Schema.Types.Mixed, default: null },
   createdAt: { type: Date, default: Date.now },
 });
 
 const Character =
   mongoose.models.Character || mongoose.model("Character", characterSchema);
+// delete (mongoose.models as any).Character;
+// const Character = mongoose.model("Character", characterSchema);
 
 const secret = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback-secret-change-me"
@@ -72,6 +75,8 @@ export async function POST(request: Request) {
     await connectDB();
     const body = await request.json();
 
+    console.log(body);
+
     const character = await Character.create({
       userId,
       name: body.name,
@@ -80,6 +85,7 @@ export async function POST(request: Request) {
       position: body.position,
       islandId: body.islandId,
       joints: body.joints ?? null,
+      personality: body.personality,
     });
 
     return NextResponse.json({
@@ -89,6 +95,8 @@ export async function POST(request: Request) {
       imageUrl: character.imageUrl,
       position: character.position,
       islandId: character.islandId,
+      joints: body.joints ?? null,
+      personality: body.personality,
     });
   } catch (error) {
     console.error("POST error:", error);

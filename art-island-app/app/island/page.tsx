@@ -79,6 +79,7 @@ export default function App() {
     name: string;
     age: number;
     islandId: number;
+    personality: any; // ← add
   } | null>(null);
   const [darkMode, setDarkMode] = useState(false);
 
@@ -145,8 +146,12 @@ export default function App() {
   const handleAddIsland = async (
     name: string,
     color: string,
+<<<<<<< HEAD
     border: string,
     skinId: string,
+=======
+    border: string
+>>>>>>> 0b0654633d076fd269a280cc16dc15cf0ec1e745
   ) => {
     try {
       const newIsland: IslandData = {
@@ -221,7 +226,11 @@ export default function App() {
   const getIslandCharacterLayouts = (
     islandId: number,
     islandList: IslandData[],
+<<<<<<< HEAD
     characterList: CharacterData[],
+=======
+    characterList: CharacterData[]
+>>>>>>> 0b0654633d076fd269a280cc16dc15cf0ec1e745
   ) => {
     const island = islandList.find((item) => item.id === islandId);
     if (!island) return [] as CharacterData[];
@@ -264,11 +273,19 @@ export default function App() {
       const fallback = {
         x: Math.max(
           greenLeft,
+<<<<<<< HEAD
           Math.min(greenRight, candidate.x + ((index % 3) - 1) * 8),
         ),
         y: Math.max(
           greenTopStart,
           Math.min(greenTopEnd, candidate.y + ((index % 2) - 0.5) * 6),
+=======
+          Math.min(greenRight, candidate.x + ((index % 3) - 1) * 8)
+        ),
+        y: Math.max(
+          greenTopStart,
+          Math.min(greenTopEnd, candidate.y + ((index % 2) - 0.5) * 6)
+>>>>>>> 0b0654633d076fd269a280cc16dc15cf0ec1e745
         ),
       };
       placedPositions.push(fallback);
@@ -282,7 +299,11 @@ export default function App() {
       layouts[island.id] = getIslandCharacterLayouts(
         island.id,
         islands,
+<<<<<<< HEAD
         characters,
+=======
+        characters
+>>>>>>> 0b0654633d076fd269a280cc16dc15cf0ec1e745
       );
     });
     return layouts;
@@ -314,9 +335,18 @@ export default function App() {
     name: string,
     age: number,
     islandId: number,
+<<<<<<< HEAD
+=======
+    personality: any // ← add
+>>>>>>> 0b0654633d076fd269a280cc16dc15cf0ec1e745
   ) => {
-    console.log("handleAddCharacter called", { name, age, islandId });
-    setPendingCharacter({ imageFile, name, age, islandId });
+    console.log("handleAddCharacter called", {
+      name,
+      age,
+      islandId,
+      personality,
+    }); // ← check it arrives
+    setPendingCharacter({ imageFile, name, age, islandId, personality }); // ← store it
     setModalState("rig");
   };
 
@@ -327,7 +357,7 @@ export default function App() {
     console.log("pendingCharacter:", pendingCharacter);
     console.log("pendingDrawing:", pendingDrawing);
     if (!pendingCharacter) return;
-    const { imageFile, name, age, islandId } = pendingCharacter;
+    const { imageFile, name, age, islandId, personality } = pendingCharacter;
 
     try {
       const position = getCharacterPosition(islandId);
@@ -352,6 +382,7 @@ export default function App() {
           position,
           islandId,
           joints,
+          personality,
         }),
       });
 
@@ -461,11 +492,18 @@ export default function App() {
 
   return (
     <div
+<<<<<<< HEAD
       className={`size-full touch-none select-none relative overflow-hidden ${isPanning ? "cursor-grabbing" : "cursor-grab"}`}
       style={{
         backgroundColor: darkMode ? "#1a3a52" : "#e8f9ff",
         opacity: darkMode ? 0.9 : 1,
       }}
+=======
+      className={`size-full touch-none select-none relative overflow-hidden ${
+        isPanning ? "cursor-grabbing" : "cursor-grab"
+      }`}
+      style={{ backgroundColor: "#e8f9ff" }}
+>>>>>>> 0b0654633d076fd269a280cc16dc15cf0ec1e745
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
@@ -483,11 +521,15 @@ export default function App() {
         {islands.map((planet, index) => {
           const displayPosition = getIslandDisplayPosition(
             index,
+<<<<<<< HEAD
             islands.length,
           );
           const imagePath = getIslandSkinImagePath(planet.skin);
           console.log(
             `Island ${planet.id} skin: ${planet.skin}, image: ${imagePath}`,
+=======
+            islands.length
+>>>>>>> 0b0654633d076fd269a280cc16dc15cf0ec1e745
           );
 
           return (
