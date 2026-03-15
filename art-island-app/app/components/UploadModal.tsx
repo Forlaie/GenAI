@@ -51,9 +51,7 @@ export function UploadModal({
   const [imageUrl, setImageUrl] = useState<string>(previewImageUrl || "");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [name, setName] = useState("");
-  const [creationDate, setCreationDate] = useState(
-    new Date().toISOString().split("T")[0],
-  );
+  const [characterAge, setCharacterAge] = useState("1");
   const [selectedIslandId, setSelectedIslandId] = useState<number | null>(
     isEvolution ? (evolutionIslandId ?? null) : null,
   );
@@ -88,12 +86,15 @@ export function UploadModal({
       );
       return;
     }
-    if ((imageFile || previewImageUrl) && name && creationDate && selectedIslandId !== null) {
-      const creationTimestamp = new Date(creationDate).getTime();
+    if ((imageFile || previewImageUrl) && name && characterAge && selectedIslandId !== null) {
+      const parsedAge = Number.parseInt(characterAge, 10);
+      const safeAge = Number.isFinite(parsedAge)
+        ? Math.min(200, Math.max(0, parsedAge))
+        : 1;
       onSubmit(
         imageFile,
         name,
-        creationTimestamp,
+        safeAge,
         selectedIslandId,
         personality,
       );
@@ -210,17 +211,18 @@ export function UploadModal({
           {!isEvolution && (
             <div>
             <label
-              htmlFor="creationDate"
+              htmlFor="characterAge"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Art Creation Date
+              Character Age
             </label>
             <input
-              type="date"
-              id="creationDate"
-              value={creationDate}
-              onChange={(e) => setCreationDate(e.target.value)}
-              max={new Date().toISOString().split("T")[0]}
+              type="number"
+              id="characterAge"
+              value={characterAge}
+              onChange={(e) => setCharacterAge(e.target.value)}
+              min={0}
+              max={200}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-400 focus:border-transparent outline-none"
               required
             />

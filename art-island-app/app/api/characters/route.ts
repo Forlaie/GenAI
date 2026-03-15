@@ -82,6 +82,26 @@ function serializeCharacter(char: mongoose.Document & Record<string, unknown>) {
     evolutionMilestones: Array<{ imageUrl: string; createdAt: Date; label?: string }>;
     versionHistory:      Array<{ imageUrl: string; createdAt: Date; stage: number; label?: string }>;
   };
+  const normalizeAge = (rawAge: unknown) => {
+    const n = typeof rawAge === "number" ? rawAge : Number(rawAge);
+    if (!Number.isFinite(n)) return 1;
+
+    // Legacy bug compatibility: some ages were stored as timestamps or calendar years.
+    if (n > 1_000_000_000) {
+      const years = Math.floor((Date.now() - n) / (365.25 * 24 * 60 * 60 * 1000));
+      return Math.min(200, Math.max(1, years));
+    }
+    if (n > 3000) {
+      const years = Math.floor((Date.now() - n) / (365.25 * 24 * 60 * 60 * 1000));
+      return Math.min(200, Math.max(1, years));
+    }
+    if (n > 200 && n < 3000) {
+      const years = new Date().getFullYear() - Math.floor(n);
+      return Math.min(200, Math.max(1, years));
+    }
+
+    return Math.min(200, Math.max(0, Math.floor(n)));
+  };
   return {
     id:       c._id.toString(),
     imageUrl: c.imageUrl,
@@ -89,7 +109,7 @@ function serializeCharacter(char: mongoose.Document & Record<string, unknown>) {
     riggedAt: c.riggedAt ?? null,
     animationPreference: (c as { animationPreference?: string }).animationPreference ?? "auto",
     name:     c.name,
-    age:      c.age,
+    age:      normalizeAge(c.age),
     position: c.position,
     islandId: c.islandId,
     joints:   c.joints ?? null,
@@ -137,10 +157,17 @@ export async function POST(request: Request) {
     await connectDB();
     const body = await request.json();
 
+    const toSafeAge = (rawAge: unknown) => {
+      const n = typeof rawAge === "number" ? rawAge : Number(rawAge);
+      if (!Number.isFinite(n)) return 1;
+      if (n > 200) return 1;
+      return Math.min(200, Math.max(0, Math.floor(n)));
+    };
+
     const character = await Character.create({
       userId,
       name:        body.name,
-      age:         body.age,
+      age:         toSafeAge(body.age),
       imageUrl:    body.imageUrl,
       rigPath:     body.rigPath ?? null,
       position:    body.position,

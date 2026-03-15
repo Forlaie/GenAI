@@ -503,7 +503,7 @@ export default function App() {
     const creationPayload  = pendingCharacter;
     const imageFile  = evolutionPayload?.imageFile ?? creationPayload?.imageFile ?? null;
     const name       = evolutionPayload?.name ?? creationPayload?.name ?? "";
-    const age        = evolutionPayload?.age  ?? creationPayload?.age  ?? Date.now();
+    const age        = evolutionPayload?.age  ?? creationPayload?.age  ?? 1;
     const islandId   = evolutionPayload?.islandId ?? creationPayload?.islandId ?? 1;
     const personality =
       evolutionPayload?.personalityDelta ??
