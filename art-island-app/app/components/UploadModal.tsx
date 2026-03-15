@@ -15,7 +15,7 @@ interface UploadModalProps {
     imageFile: File | null,
     name: string,
     age: number,
-    islandId: number,
+    islandId: number
   ) => void;
   previewImageUrl?: string;
   islands: IslandData[];
@@ -49,7 +49,6 @@ export function UploadModal({
       // Store the creation date as a timestamp (milliseconds since epoch)
       const creationTimestamp = new Date(creationDate).getTime();
       onSubmit(imageFile, name, creationTimestamp, selectedIslandId);
-      onClose();
     }
   };
 
