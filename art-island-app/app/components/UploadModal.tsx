@@ -7,6 +7,7 @@ import { Camera, Upload, X } from "lucide-react";
 interface IslandData {
   id: number;
   label: string;
+  skin?: string;
 }
 
 interface UploadModalProps {
@@ -16,7 +17,7 @@ interface UploadModalProps {
     name: string,
     age: number,
     islandId: number,
-    personality: PersonalityData
+    personality: PersonalityData,
   ) => void;
   previewImageUrl?: string;
   islands: IslandData[];
@@ -29,7 +30,16 @@ interface PersonalityData {
   favoriteThing: string;
 }
 
-const TRAITS = ["Brave", "Silly", "Cozy", "Adventurous", "Sneaky", "Cheerful", "Grumpy", "Magical"];
+const TRAITS = [
+  "Brave",
+  "Silly",
+  "Cozy",
+  "Adventurous",
+  "Sneaky",
+  "Cheerful",
+  "Grumpy",
+  "Magical",
+];
 
 export function UploadModal({
   onClose,
@@ -40,7 +50,9 @@ export function UploadModal({
   const [imageUrl, setImageUrl] = useState<string>(previewImageUrl || "");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [name, setName] = useState("");
-  const [creationDate, setCreationDate] = useState(new Date().toISOString().split("T")[0]);
+  const [creationDate, setCreationDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const [selectedIslandId, setSelectedIslandId] = useState(islands[0]?.id || 1);
   const [showPersonality, setShowPersonality] = useState(false);
   const [personality, setPersonality] = useState<PersonalityData>({
@@ -63,7 +75,13 @@ export function UploadModal({
     e.preventDefault();
     if ((imageFile || previewImageUrl) && name && creationDate) {
       const creationTimestamp = new Date(creationDate).getTime();
-      onSubmit(imageFile, name, creationTimestamp, selectedIslandId, personality);
+      onSubmit(
+        imageFile,
+        name,
+        creationTimestamp,
+        selectedIslandId,
+        personality,
+      );
     }
   };
 
@@ -133,19 +151,28 @@ export function UploadModal({
                 >
                   <Camera className="w-6 h-6 text-gray-400" />
                   <Upload className="w-6 h-6 text-gray-400" />
-                  <span className="text-gray-600">Take Photo or Choose File</span>
+                  <span className="text-gray-600">
+                    Take Photo or Choose File
+                  </span>
                 </label>
               </div>
             )}
             {imageUrl && !previewImageUrl && (
               <div className="mt-4 w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
-                <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  className="w-full h-full object-cover"
+                />
               </div>
             )}
           </div>
 
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Character's Name
             </label>
             <input
@@ -160,7 +187,10 @@ export function UploadModal({
           </div>
 
           <div>
-            <label htmlFor="creationDate" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="creationDate"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Art Creation Date
             </label>
             <input
@@ -175,7 +205,10 @@ export function UploadModal({
           </div>
 
           <div>
-            <label htmlFor="island" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="island"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Choose Island
             </label>
             <select
@@ -199,7 +232,9 @@ export function UploadModal({
               onClick={() => setShowPersonality(!showPersonality)}
               className="text-sm text-black hover:underline font-medium"
             >
-              {showPersonality ? "Hide personality ▲" : "Give them a personality! (optional) ▼"}
+              {showPersonality
+                ? "Hide personality ▲"
+                : "Give them a personality! (optional) ▼"}
             </button>
 
             {showPersonality && (
@@ -208,12 +243,19 @@ export function UploadModal({
                   type="text"
                   placeholder="Their catchphrase?"
                   value={personality.catchphrase}
-                  onChange={(e) => setPersonality({ ...personality, catchphrase: e.target.value })}
+                  onChange={(e) =>
+                    setPersonality({
+                      ...personality,
+                      catchphrase: e.target.value,
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-sm"
                 />
 
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">Personality traits</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Personality traits
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     {TRAITS.map((trait) => (
                       <button
@@ -236,7 +278,12 @@ export function UploadModal({
                   type="text"
                   placeholder="What do they do all day?"
                   value={personality.dailyActivity}
-                  onChange={(e) => setPersonality({ ...personality, dailyActivity: e.target.value })}
+                  onChange={(e) =>
+                    setPersonality({
+                      ...personality,
+                      dailyActivity: e.target.value,
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-sm"
                 />
 
@@ -244,19 +291,34 @@ export function UploadModal({
                   type="text"
                   placeholder="Their favourite thing?"
                   value={personality.favoriteThing}
-                  onChange={(e) => setPersonality({ ...personality, favoriteThing: e.target.value })}
+                  onChange={(e) =>
+                    setPersonality({
+                      ...personality,
+                      favoriteThing: e.target.value,
+                    })
+                  }
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent text-sm"
                 />
               </div>
             )}
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-black text-white font-bold py-3 rounded hover:-translate-y-1 transition-all"
-          >
-            Add to Island!
-          </button>
+          <div className="flex gap-3 pt-4">
+            <button
+              type="submit"
+              disabled={!(imageFile || previewImageUrl) || !name}
+              className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              Add to Island!
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       </motion.div>
     </motion.div>

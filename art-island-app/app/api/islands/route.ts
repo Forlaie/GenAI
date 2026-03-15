@@ -13,6 +13,7 @@ const islandSchema = new mongoose.Schema({
   color: String,
   border: String,
   label: String,
+  skin: { type: String, default: "dirt" },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -52,6 +53,7 @@ export async function GET() {
         color: island.color,
         border: island.border,
         label: island.label,
+        skin: island.skin,
       })),
     );
   } catch (error) {
@@ -81,6 +83,7 @@ export async function POST(request: Request) {
       color: body.color,
       border: body.border,
       label: body.label,
+      skin: body.skin || "dirt",
     });
 
     return NextResponse.json({
@@ -91,6 +94,7 @@ export async function POST(request: Request) {
       color: island.color,
       border: island.border,
       label: island.label,
+      skin: island.skin,
     });
   } catch (error) {
     console.error("POST error:", error);
@@ -128,6 +132,7 @@ export async function PUT(request: Request) {
       color: island.color,
       border: island.border,
       label: island.label,
+      skin: island.skin,
     });
   } catch (error) {
     console.error("PUT error:", error);

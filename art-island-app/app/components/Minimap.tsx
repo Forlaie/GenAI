@@ -11,6 +11,7 @@ interface IslandData {
   color: string;
   border: string;
   label: string;
+  skin?: string;
 }
 
 interface CharacterData {
@@ -29,7 +30,13 @@ interface MinimapProps {
 
 const ISLAND_SIZE = 620;
 
-export function Minimap({ islands, characters, panX, panY, zoom }: MinimapProps) {
+export function Minimap({
+  islands,
+  characters,
+  panX,
+  panY,
+  zoom,
+}: MinimapProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Independent pan state for the expanded map
@@ -85,12 +92,20 @@ export function Minimap({ islands, characters, panX, panY, zoom }: MinimapProps)
 
   const expandedContentWidth = expandedWidth - 24;
   const expandedContentHeight = expandedHeight - 40;
-  const expandedScaleX = (expandedContentWidth / worldWidth) * EXPANDED_ZOOM_OUT;
-  const expandedScaleY = (expandedContentHeight / worldHeight) * EXPANDED_ZOOM_OUT;
+  const expandedScaleX =
+    (expandedContentWidth / worldWidth) * EXPANDED_ZOOM_OUT;
+  const expandedScaleY =
+    (expandedContentHeight / worldHeight) * EXPANDED_ZOOM_OUT;
 
   const worldToExpanded = (worldX: number, worldY: number) => ({
-    x: (worldX + panX) * expandedScaleX + expandedContentWidth / 2 + expandedPanX,
-    y: (worldY + panY) * expandedScaleY + expandedContentHeight / 2 + expandedPanY,
+    x:
+      (worldX + panX) * expandedScaleX +
+      expandedContentWidth / 2 +
+      expandedPanX,
+    y:
+      (worldY + panY) * expandedScaleY +
+      expandedContentHeight / 2 +
+      expandedPanY,
   });
 
   const handleExpandedPointerDown = (e: React.PointerEvent) => {
@@ -132,28 +147,49 @@ export function Minimap({ islands, characters, panX, panY, zoom }: MinimapProps)
           <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-2">
             <div
               className="relative overflow-hidden border border-gray-300 bg-gray-50"
-              style={{ width: minimapWidth, height: minimapHeight, pointerEvents: "none" }}
+              style={{
+                width: minimapWidth,
+                height: minimapHeight,
+                pointerEvents: "none",
+              }}
             >
               {islands.map((island, index) => {
                 const pixelPos = islandPixelPositions[index];
-                const minimapPos = worldToUserCentricMinimap(pixelPos.x, pixelPos.y);
-                const displaySize = (island.size / worldWidth) * minimapWidth * 0.3 * zoom;
+                const minimapPos = worldToUserCentricMinimap(
+                  pixelPos.x,
+                  pixelPos.y,
+                );
+                const displaySize =
+                  (island.size / worldWidth) * minimapWidth * 0.3 * zoom;
                 return (
-                  <div
-                    key={island.id}
-                    className="absolute rounded-full"
-                    style={{
-                      left: minimapPos.x - displaySize / 2,
-                      top: minimapPos.y - displaySize / 2,
-                      width: displaySize,
-                      height: displaySize,
-                      backgroundColor: island.color,
-                      border: `1.5px solid ${island.border}`,
-                      opacity: 0.8,
-                      pointerEvents: "none",
-                    }}
-                    title={island.label}
-                  />
+                  <div key={island.id} style={{ pointerEvents: "none" }}>
+                    <div
+                      className="absolute rounded-full"
+                      style={{
+                        left: minimapPos.x - displaySize / 2,
+                        top: minimapPos.y - displaySize / 2,
+                        width: displaySize,
+                        height: displaySize,
+                        backgroundColor: island.color,
+                        border: `1.5px solid ${island.border}`,
+                        opacity: 0.8,
+                        pointerEvents: "none",
+                      }}
+                      title={island.label}
+                    />
+                    <span
+                      className="absolute text-xs font-bold text-gray-800 text-center truncate"
+                      style={{
+                        left: minimapPos.x - displaySize / 2,
+                        top: minimapPos.y + displaySize / 2 + 2,
+                        width: displaySize,
+                        fontSize: "7px",
+                        maxWidth: displaySize + 10,
+                      }}
+                    >
+                      {island.label}
+                    </span>
+                  </div>
                 );
               })}
 
@@ -164,7 +200,10 @@ export function Minimap({ islands, characters, panX, panY, zoom }: MinimapProps)
                 const islandPixelPos = islandPixelPositions[islandIndex];
                 const charWorldX = islandPixelPos.x + character.position.x - 50;
                 const charWorldY = islandPixelPos.y + character.position.y - 50;
-                const charMinimapPos = worldToUserCentricMinimap(charWorldX, charWorldY);
+                const charMinimapPos = worldToUserCentricMinimap(
+                  charWorldX,
+                  charWorldY,
+                );
                 return (
                   <div
                     key={character.id}
@@ -245,23 +284,39 @@ export function Minimap({ islands, characters, panX, panY, zoom }: MinimapProps)
                 const pixelPos = islandPixelPositions[index];
                 const pos = worldToExpanded(pixelPos.x, pixelPos.y);
                 const displaySize =
-                  (island.size / worldWidth) * expandedContentWidth * 0.3 * EXPANDED_ZOOM_OUT;
+                  (island.size / worldWidth) *
+                  expandedContentWidth *
+                  0.3 *
+                  EXPANDED_ZOOM_OUT;
                 return (
-                  <div
-                    key={island.id}
-                    className="absolute rounded-full"
-                    style={{
-                      left: pos.x - displaySize / 2,
-                      top: pos.y - displaySize / 2,
-                      width: displaySize,
-                      height: displaySize,
-                      backgroundColor: island.color,
-                      border: `2px solid ${island.border}`,
-                      opacity: 0.8,
-                      pointerEvents: "none",
-                    }}
-                    title={island.label}
-                  />
+                  <div key={island.id} style={{ pointerEvents: "none" }}>
+                    <div
+                      className="absolute rounded-full"
+                      style={{
+                        left: pos.x - displaySize / 2,
+                        top: pos.y - displaySize / 2,
+                        width: displaySize,
+                        height: displaySize,
+                        backgroundColor: island.color,
+                        border: `2px solid ${island.border}`,
+                        opacity: 0.8,
+                        pointerEvents: "none",
+                      }}
+                      title={island.label}
+                    />
+                    <span
+                      className="absolute text-xs font-bold text-gray-800 text-center truncate"
+                      style={{
+                        left: pos.x - displaySize / 2,
+                        top: pos.y + displaySize / 2 + 4,
+                        width: displaySize,
+                        fontSize: "9px",
+                        maxWidth: displaySize + 10,
+                      }}
+                    >
+                      {island.label}
+                    </span>
+                  </div>
                 );
               })}
 

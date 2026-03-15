@@ -99,7 +99,16 @@ export function CharacterDetail({
 
               <p className="text-2xl md:text-3xl font-bold text-gray-800 leading-relaxed">
                 Hi! My name is <span className="text-purple-600">{name}</span>{" "}
-                and I am <span className="text-pink-600">{ageDisplay}</span>!
+                {ageDisplay.startsWith("I was") ? (
+                  <>
+                    and <span className="text-pink-600">{ageDisplay}</span>!
+                  </>
+                ) : (
+                  <>
+                    and I am <span className="text-pink-600">{ageDisplay}</span>
+                    !
+                  </>
+                )}
               </p>
             </motion.div>
           </div>

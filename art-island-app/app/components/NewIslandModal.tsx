@@ -19,9 +19,26 @@ const ISLAND_COLORS: IslandColor[] = [
   { label: "Yellow", color: "#FFFDE7", border: "#F57F17" },
 ];
 
+interface IslandSkin {
+  id: string;
+  imagePath: string;
+  label: string;
+}
+
+const ISLAND_SKINS: IslandSkin[] = [
+  { id: "dirt", imagePath: "/island.png", label: "Dirt" },
+  { id: "sand", imagePath: "/sand_island.png", label: "Sand" },
+  { id: "stone", imagePath: "/stone_island.png", label: "Stone" },
+];
+
 interface NewIslandModalProps {
   onClose: () => void;
-  onSubmit: (name: string, color: string, border: string) => void;
+  onSubmit: (
+    name: string,
+    color: string,
+    border: string,
+    skinId: string,
+  ) => void;
   isTutorial?: boolean;
 }
 
@@ -34,11 +51,17 @@ export function NewIslandModal({
   const [selectedColor, setSelectedColor] = useState(
     isTutorial ? ISLAND_COLORS[3] : ISLAND_COLORS[0],
   ); // Pink for tutorial
+  const [selectedSkin, setSelectedSkin] = useState(ISLAND_SKINS[0]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim()) {
-      onSubmit(name, selectedColor.color, selectedColor.border);
+      onSubmit(
+        name,
+        selectedColor.color,
+        selectedColor.border,
+        selectedSkin.id,
+      );
       onClose();
     }
   };
@@ -92,6 +115,36 @@ export function NewIslandModal({
               placeholder="Enter island name..."
               autoFocus
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Choose Skin
+            </label>
+            <div className="grid grid-cols-3 gap-3 mb-6">
+              {ISLAND_SKINS.map((skin) => (
+                <button
+                  key={skin.id}
+                  type="button"
+                  onClick={() => setSelectedSkin(skin)}
+                  className={`p-2 rounded-lg transition-all border-2 ${
+                    selectedSkin.id === skin.id
+                      ? "border-green-500 ring-2 ring-green-300"
+                      : "border-gray-300 hover:border-green-300"
+                  }`}
+                  title={skin.label}
+                >
+                  <img
+                    src={skin.imagePath}
+                    alt={skin.label}
+                    className="w-12 h-12 object-cover rounded"
+                  />
+                  <div className="text-xs font-medium text-gray-700 mt-1">
+                    {skin.label}
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

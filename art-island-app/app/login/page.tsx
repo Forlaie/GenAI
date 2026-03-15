@@ -67,7 +67,17 @@ export default function LoginPage() {
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-4 py-3 rounded bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-colors"
+            className="w-full px-4 py-3 rounded bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-black focus:ring-2 focus:ring-black/20 transition-colors"
+            style={{
+              boxShadow: "none",
+            }}
+            onFocus={(e) => {
+              (e.target as HTMLInputElement).style.boxShadow =
+                "0 0 0 2px rgba(0, 0, 0, 0.1), 0 0 10px rgba(0, 255, 0, 0.4)";
+            }}
+            onBlur={(e) => {
+              (e.target as HTMLInputElement).style.boxShadow = "none";
+            }}
             required
           />
           <input
@@ -75,7 +85,17 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-colors"
+            className="w-full px-4 py-3 rounded bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-black focus:ring-2 focus:ring-black/20 transition-colors"
+            style={{
+              boxShadow: "none",
+            }}
+            onFocus={(e) => {
+              (e.target as HTMLInputElement).style.boxShadow =
+                "0 0 0 2px rgba(0, 0, 0, 0.1), 0 0 10px rgba(0, 255, 0, 0.4)";
+            }}
+            onBlur={(e) => {
+              (e.target as HTMLInputElement).style.boxShadow = "none";
+            }}
             required
           />
 

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { Plus, LogOut, MapPin } from "lucide-react";
+import { Plus, LogOut, MapPin, Moon, Sun } from "lucide-react";
 import { Character } from "../components/Character";
 import { CharacterDetail } from "../components/CharacterDetail";
 import { UploadModal } from "../components/UploadModal";
@@ -13,7 +13,6 @@ import { DrawingCanvas } from "../components/DrawingCanvas";
 import { TutorialOverlay } from "../components/TutorialOverlay";
 import { Minimap } from "../components/Minimap";
 import JointEditor from "@/app/components/JointEditor";
-import Link from "next/link";
 
 type ModalState = "none" | "choose" | "draw" | "upload" | "rig";
 type TutorialStep = "create-island" | "draw-maple" | "none";
@@ -35,7 +34,24 @@ interface IslandData {
   color: string;
   border: string;
   label: string;
+  skin?: string;
 }
+
+interface IslandSkin {
+  id: string;
+  imagePath: string;
+}
+
+const ISLAND_SKINS: IslandSkin[] = [
+  { id: "dirt", imagePath: "/island.png" },
+  { id: "sand", imagePath: "/sand_island.png" },
+  { id: "stone", imagePath: "/stone_island.png" },
+];
+
+const getIslandSkinImagePath = (skinId?: string): string => {
+  const skin = ISLAND_SKINS.find((s) => s.id === skinId);
+  return skin?.imagePath || ISLAND_SKINS[0].imagePath;
+};
 
 const ISLAND_SIZE = 620;
 const CHARACTER_FOOTPRINT_PX = 112;
@@ -44,7 +60,8 @@ export default function App() {
   const router = useRouter();
   const panStartRef = useRef<{ x: number; y: number } | null>(null);
   const [characters, setCharacters] = useState<CharacterData[]>([]);
-  const [selectedCharacter, setSelectedCharacter] = useState<CharacterData | null>(null);
+  const [selectedCharacter, setSelectedCharacter] =
+    useState<CharacterData | null>(null);
   const [modalState, setModalState] = useState<ModalState>("none");
   const [pendingDrawing, setPendingDrawing] = useState<string | null>(null);
   const [showNewIslandModal, setShowNewIslandModal] = useState(false);
@@ -63,6 +80,7 @@ export default function App() {
     age: number;
     islandId: number;
   } | null>(null);
+  const [darkMode, setDarkMode] = useState(false);
 
   useEffect(() => {
     loadCharacters();
@@ -102,7 +120,7 @@ export default function App() {
       setNextIslandId(
         normalizedIslands.length > 0
           ? Math.max(...normalizedIslands.map((i: any) => i.id)) + 1
-          : 1
+          : 1,
       );
 
       if (normalizedIslands.length === 0) {
@@ -124,7 +142,12 @@ export default function App() {
     y: Math.random() * 70 + 15,
   });
 
-  const handleAddIsland = async (name: string, color: string, border: string) => {
+  const handleAddIsland = async (
+    name: string,
+    color: string,
+    border: string,
+    skinId: string,
+  ) => {
     try {
       const newIsland: IslandData = {
         id: nextIslandId,
@@ -133,6 +156,7 @@ export default function App() {
         color,
         border,
         label: name,
+        skin: skinId,
       };
 
       const res = await fetch("/api/islands", {
@@ -142,7 +166,9 @@ export default function App() {
       });
 
       if (!res.ok) throw new Error("Failed to save island");
-      setIslands((prev) => [...prev, newIsland]);
+
+      const savedIsland = await res.json();
+      setIslands((prev) => [...prev, savedIsland]);
       setNextIslandId((prev) => prev + 1);
       setShowNewIslandModal(false);
 
@@ -192,12 +218,16 @@ export default function App() {
     return { x: 50, y: 50 };
   };
 
-  const getIslandCharacterLayouts = (islandId: number, islandList: IslandData[], characterList: CharacterData[]) => {
+  const getIslandCharacterLayouts = (
+    islandId: number,
+    islandList: IslandData[],
+    characterList: CharacterData[],
+  ) => {
     const island = islandList.find((item) => item.id === islandId);
     if (!island) return [] as CharacterData[];
 
     const islandCharacters = characterList.filter(
-      (char) => char.islandId === islandId
+      (char) => char.islandId === islandId,
     );
     const placedPositions: Array<{ x: number; y: number }> = [];
     const minDistance = (CHARACTER_FOOTPRINT_PX / island.size) * 100;
@@ -232,8 +262,14 @@ export default function App() {
 
       // Deterministic fallback using index instead of Math.random()
       const fallback = {
-        x: Math.max(greenLeft, Math.min(greenRight, candidate.x + (index % 3 - 1) * 8)),
-        y: Math.max(greenTopStart, Math.min(greenTopEnd, candidate.y + (index % 2 - 0.5) * 6)),
+        x: Math.max(
+          greenLeft,
+          Math.min(greenRight, candidate.x + ((index % 3) - 1) * 8),
+        ),
+        y: Math.max(
+          greenTopStart,
+          Math.min(greenTopEnd, candidate.y + ((index % 2) - 0.5) * 6),
+        ),
       };
       placedPositions.push(fallback);
       return { ...character, position: fallback };
@@ -243,7 +279,11 @@ export default function App() {
   const islandCharacterLayouts = useMemo(() => {
     const layouts: Record<number, CharacterData[]> = {};
     islands.forEach((island) => {
-      layouts[island.id] = getIslandCharacterLayouts(island.id, islands, characters);
+      layouts[island.id] = getIslandCharacterLayouts(
+        island.id,
+        islands,
+        characters,
+      );
     });
     return layouts;
   }, [islands, characters]);
@@ -273,7 +313,7 @@ export default function App() {
     imageFile: File | null,
     name: string,
     age: number,
-    islandId: number
+    islandId: number,
   ) => {
     console.log("handleAddCharacter called", { name, age, islandId });
     setPendingCharacter({ imageFile, name, age, islandId });
@@ -281,7 +321,7 @@ export default function App() {
   };
 
   const handleRigConfirm = async (
-    joints: Record<string, { x: number; y: number }>
+    joints: Record<string, { x: number; y: number }>,
   ) => {
     console.log("handleRigConfirm called");
     console.log("pendingCharacter:", pendingCharacter);
@@ -422,7 +462,10 @@ export default function App() {
   return (
     <div
       className={`size-full touch-none select-none relative overflow-hidden ${isPanning ? "cursor-grabbing" : "cursor-grab"}`}
-      style={{ backgroundColor: "#e8f9ff" }}
+      style={{
+        backgroundColor: darkMode ? "#1a3a52" : "#e8f9ff",
+        opacity: darkMode ? 0.9 : 1,
+      }}
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
@@ -438,7 +481,14 @@ export default function App() {
         className="absolute inset-0 pointer-events-none"
       >
         {islands.map((planet, index) => {
-          const displayPosition = getIslandDisplayPosition(index, islands.length);
+          const displayPosition = getIslandDisplayPosition(
+            index,
+            islands.length,
+          );
+          const imagePath = getIslandSkinImagePath(planet.skin);
+          console.log(
+            `Island ${planet.id} skin: ${planet.skin}, image: ${imagePath}`,
+          );
 
           return (
             <div
@@ -452,8 +502,8 @@ export default function App() {
                   height: planet.size * 0.4, // reduce height to clip the empty bottom space
                   overflow: "hidden",
                   position: "relative",
-                  backgroundImage: "url('/island.png')",
-                  backgroundSize: "contain",
+                  backgroundImage: `url('${imagePath}')`,
+                  backgroundSize: "cover",
                   backgroundRepeat: "no-repeat",
                   backgroundPosition: "center top",
                 }}
@@ -468,7 +518,7 @@ export default function App() {
               </div>
               <p
                 className="text-center text-lg font-medium mt-3"
-                style={{ color: "#888780" }}
+                style={{ color: darkMode ? "#ffffff" : "#888780" }}
               >
                 {planet.label}
               </p>
@@ -481,7 +531,7 @@ export default function App() {
       <div className="fixed top-4 sm:top-6 left-4 sm:left-6 flex gap-2 z-10">
         <button
           onClick={() => setModalState("choose")}
-          className="bg-purple-500 hover:bg-purple-600 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all flex items-center gap-2 text-sm sm:text-base"
+          className="bg-black hover:bg-gray-900 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all flex items-center gap-2 text-sm sm:text-base"
         >
           <Plus className="w-5 h-5" />
           <span className="hidden sm:inline">Add Drawing</span>
@@ -489,39 +539,66 @@ export default function App() {
         </button>
         <button
           onClick={() => setShowNewIslandModal(true)}
-          className="bg-green-500 hover:bg-green-600 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all flex items-center gap-2 text-sm sm:text-base"
+          className="bg-black hover:bg-gray-900 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all flex items-center gap-2 text-sm sm:text-base"
         >
           <MapPin className="w-5 h-5" />
           <span className="hidden sm:inline">New Island</span>
           <span className="sm:hidden">Island</span>
         </button>
-
-        <Link
-          href="/rig"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all flex items-center gap-2 text-sm sm:text-base"
-        >
-          <span className="hidden sm:inline">Rig Character</span>
-          <span className="sm:hidden">Rig</span>
-        </Link>
       </div>
 
-      {/* Logout */}
-      <button
-        onClick={handleLogout}
-        className="fixed top-4 sm:top-6 right-4 sm:right-6 bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all flex items-center gap-2 z-10 text-sm sm:text-base"
-      >
-        <LogOut className="w-5 h-5" />
-        <span className="hidden sm:inline">Log Out</span>
-      </button>
+      {/* Right Side Buttons */}
+      <div className="fixed top-4 sm:top-6 right-4 sm:right-6 flex gap-2 z-10">
+        <button
+          onClick={() => router.push("/rig")}
+          className="bg-black hover:bg-gray-900 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full transition-all flex items-center gap-2 text-sm sm:text-base"
+        >
+          <span>🦴</span>
+          <span className="hidden sm:inline">Rig Character</span>
+          <span className="sm:hidden">Rig</span>
+        </button>
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all flex items-center gap-2 text-sm sm:text-base"
+        >
+          {darkMode ? (
+            <Sun className="w-5 h-5" />
+          ) : (
+            <Moon className="w-5 h-5" />
+          )}
+        </button>
+        <button
+          onClick={handleLogout}
+          className="bg-red-100 hover:bg-red-200 text-red-600 font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all flex items-center gap-2 text-sm sm:text-base"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="hidden sm:inline">Log Out</span>
+        </button>
+      </div>
 
       {/* Title */}
       <div className="fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 text-center z-10 px-4">
-        <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-800">
-          Ding Dong Doodle
-        </h1>
-        <p className="text-gray-400 text-xs sm:text-sm mt-1">
-          Draw. Dream. Discover.
-        </p>
+        <div
+          style={{
+            background: darkMode ? "transparent" : "white",
+            padding: "1rem 1.5rem",
+            borderRadius: "50% 50% 50% 50% / 60% 60% 40% 40%",
+            display: "inline-block",
+            position: "relative",
+            border: `2px solid ${darkMode ? "#ffffff" : "#000000"}`,
+          }}
+        >
+          <h1
+            className={`text-xl sm:text-2xl md:text-3xl font-medium ${darkMode ? "text-white" : "text-gray-800"}`}
+          >
+            Ding Dong Doodle
+          </h1>
+          <p
+            className={`text-xs sm:text-sm mt-1 ${darkMode ? "text-gray-300" : "text-gray-600"}`}
+          >
+            Draw. Dream. Discover.
+          </p>
+        </div>
       </div>
 
       {characters.length === 0 && (

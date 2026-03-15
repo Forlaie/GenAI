@@ -34,7 +34,7 @@ export default function RigPage() {
   }, []);
 
   async function handleConfirm(
-    joints: Record<string, { x: number; y: number }>
+    joints: Record<string, { x: number; y: number }>,
   ) {
     await fetch("/api/rig", {
       method: "POST",
@@ -81,8 +81,14 @@ export default function RigPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="border-b px-6 py-4 flex items-center justify-between">
-        <div>
+      <div className="relative border-b px-6 py-4 flex items-center justify-center">
+        <Link
+          href="/island"
+          className="absolute top-4 left-4 bg-white border border-gray-200 shadow-sm text-gray-600 hover:text-gray-900 text-sm flex items-center gap-1 px-3 py-2 rounded hover:-translate-y-0.5 transition-all"
+        >
+          ← Back
+        </Link>
+        <div className="text-center">
           <h1 className="text-lg font-medium text-gray-800">
             {selected ? `Rigging: ${selected.name}` : "Rig a character"}
           </h1>
@@ -92,12 +98,6 @@ export default function RigPage() {
               : "Select a character to place joints on."}
           </p>
         </div>
-        <Link
-          href="/island"
-          className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          ← Back to island
-        </Link>
       </div>
 
       {!selected ? (
