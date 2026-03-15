@@ -44,14 +44,14 @@ export function NewIslandModal({
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
-        className="relative bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4"
+        className="relative w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-xl"
         initial={{ scale: 0.8, y: 50 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.8, y: 50 }}
@@ -60,25 +60,25 @@ export function NewIslandModal({
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 transition-colors"
+          className="absolute right-3 top-3 rounded-full p-2 text-stone-500 transition hover:bg-stone-100 hover:text-stone-700"
         >
-          <X className="w-6 h-6" />
+          <X className="h-5 w-5" />
         </button>
 
-        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+        <h2 className="font-serif text-2xl font-bold text-stone-900 mb-1">
           Create New Island
         </h2>
         {isTutorial && (
-          <p className="text-sm text-gray-600 mb-6">
-            🍁 Perfect! Let's create your first island - Toronto!
+          <p className="mb-5 text-sm text-stone-500">
+            Perfect! Let&apos;s create your first island.
           </p>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label
               htmlFor="island-name"
-              className="block text-sm font-medium text-gray-700 mb-2"
+              className="mb-1.5 block text-[11px] font-semibold uppercase tracking-widest text-stone-400"
             >
               Island Name
             </label>
@@ -87,35 +87,35 @@ export function NewIslandModal({
               id="island-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-400 focus:border-transparent outline-none"
+              className="w-full rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-sm text-stone-800 placeholder:text-stone-300 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-300"
               placeholder="Enter island name..."
               autoFocus
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-widest text-stone-400">
               Choose Skin
             </label>
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-3 gap-2.5">
               {ISLAND_SKINS.map((skin) => (
                 <button
                   key={skin.id}
                   type="button"
                   onClick={() => setSelectedSkin(skin)}
-                  className={`p-2 rounded-lg transition-all border-2 ${
+                  className={`rounded-xl border p-2 transition-colors ${
                     selectedSkin.id === skin.id
-                      ? "border-green-500 ring-2 ring-green-300"
-                      : "border-gray-300 hover:border-green-300"
+                      ? "border-stone-400 bg-stone-100"
+                      : "border-stone-200 bg-white hover:border-stone-300"
                   }`}
                   title={skin.label}
                 >
                   <img
                     src={skin.imagePath}
                     alt={skin.label}
-                    className="w-12 h-12 object-cover rounded"
+                    className="h-12 w-12 rounded object-cover"
                   />
-                  <div className="text-xs font-medium text-gray-700 mt-1">
+                  <div className="mt-1 text-xs font-medium text-stone-700">
                     {skin.label}
                   </div>
                 </button>
@@ -123,18 +123,18 @@ export function NewIslandModal({
             </div>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-2 pt-2">
             <button
               type="submit"
               disabled={!name.trim()}
-              className="flex-1 bg-green-500 hover:bg-green-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 rounded-full bg-stone-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:bg-stone-200 disabled:text-stone-400"
             >
               Create Island
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors"
+              className="flex-1 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
             >
               Cancel
             </button>
