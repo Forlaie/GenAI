@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "motion/react";
 import { EvolutionTimeline, VersionStage } from "./EvolutionTimeline";
@@ -44,6 +44,12 @@ export interface CharacterDetailProps {
 
 type Tab        = "info" | "memories" | "evolution";
 type EvolveStep = "idle" | "choose" | "draw" | "rig" | "saving";
+type ChatRole = "user" | "assistant";
+
+type ChatMessage = {
+  role: ChatRole;
+  text: string;
+};
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -70,6 +76,22 @@ export function CharacterDetail({
   const [liveHistory,       setLiveHistory]       = useState<VersionStage[]>(initialHistory);
   const [liveMemories,      setLiveMemories]      = useState<Memory[]>(initialMemories);
   const [livePersonality,   setLivePersonality]   = useState<Personality | null>(initialPersonality ?? null);
+  const [chatInput, setChatInput]                 = useState("");
+  const [chatBusy, setChatBusy]                   = useState(false);
+
+  const favoriteForQuote = useMemo(() => {
+    if (livePersonality?.favoriteThing?.trim()) return livePersonality.favoriteThing.trim();
+    if (livePersonality?.traits?.length) return livePersonality.traits[0];
+    if (liveMemories.length > 0) return liveMemories[liveMemories.length - 1].text;
+    return "new adventures";
+  }, [livePersonality, liveMemories]);
+
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    {
+      role: "assistant",
+      text: `Hi! I am ${name}. And I like ${favoriteForQuote}. How are you?!`,
+    },
+  ]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const stageCount   = liveHistory.length;
@@ -89,6 +111,53 @@ export function CharacterDetail({
     setNewImageUrl(null);
     setEvolveError(null);
     setMemoryNote("");
+  };
+
+  const sendChat = async () => {
+    const text = chatInput.trim();
+    if (!text || chatBusy) return;
+
+    const nextMessages: ChatMessage[] = [...chatMessages, { role: "user", text }];
+    setChatMessages(nextMessages);
+    setChatInput("");
+    setChatBusy(true);
+
+    try {
+      const res = await fetch("/api/character-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          character: {
+            id,
+            name,
+            age,
+            memories: liveMemories,
+            personality: livePersonality,
+            versionHistory: liveHistory,
+          },
+          messages: nextMessages,
+        }),
+      });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error || "Could not chat with character.");
+      }
+
+      const payload = await res.json();
+      const reply = String(payload?.reply || "").trim();
+      if (!reply) throw new Error("Character had no response.");
+
+      setChatMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Chat failed.";
+      setChatMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: `Sorry, I got shy for a moment: ${message}` },
+      ]);
+    } finally {
+      setChatBusy(false);
+    }
   };
 
   // ── Rig → PATCH evolve ───────────────────────────────────────────────────
@@ -153,7 +222,7 @@ export function CharacterDetail({
         aren't clipped by overflow:hidden or maxHeight.
       */}
       {evolveStep === "draw" && (
-        <div className="fixed inset-0 z-[60]">
+        <div className="fixed inset-0 z-60">
           <DrawingCanvas
             onSave={(dataUrl) => {
               setNewImageUrl(dataUrl);
@@ -184,7 +253,7 @@ export function CharacterDetail({
       {/* Main modal backdrop + card */}
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 bg-black/45 flex items-start sm:items-center justify-center p-4 overflow-y-auto"
         onClick={evolveStep === "idle" ? onClose : undefined}
       >
         <motion.div
@@ -195,6 +264,7 @@ export function CharacterDetail({
           className="bg-white rounded-2xl shadow-2xl border border-stone-200 w-full overflow-hidden flex flex-col"
           style={{
             maxWidth:  evolveStep === "rig" ? 760 : 620,
+            height: "min(92vh, 48rem)",
             maxHeight: "92vh",
           }}
           onClick={(e) => e.stopPropagation()}
@@ -300,7 +370,7 @@ export function CharacterDetail({
             {evolveStep === "idle" && (
               <motion.div key="normal"
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                className="flex flex-col flex-1 min-h-0 h-full overflow-hidden">
 
                 {/* Tab bar + action buttons */}
                 <div className="flex items-center border-b border-stone-200 px-1 pt-1 shrink-0">
@@ -327,7 +397,7 @@ export function CharacterDetail({
 
                   {/* ── Info ────────────────────────────────────────────────── */}
                   {tab === "info" && (
-                    <div className="h-full overflow-y-auto p-5 space-y-5">
+                    <div className="h-full min-h-0 overflow-y-auto overscroll-contain p-5 space-y-5">
                       <div className="flex gap-5">
                         <div className="relative w-28 h-28 shrink-0 rounded-2xl overflow-hidden border border-stone-200 bg-stone-50">
                           <Image src={liveImageUrl} alt={name} fill className="object-contain p-2" />
@@ -380,12 +450,69 @@ export function CharacterDetail({
                           )}
                         </div>
                       )}
+
+                      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                        <p className="text-sm text-stone-700">
+                          <span className="font-semibold text-amber-800">Hi! I am {name}. </span>
+                          And I like <span className="font-semibold text-amber-800">{favoriteForQuote}</span>. How are you?!
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-stone-200 bg-white">
+                        <div className="border-b border-stone-100 px-4 py-2.5">
+                          <p className="text-[11px] text-stone-500 uppercase tracking-widest font-semibold">
+                            Chat with {name}
+                          </p>
+                        </div>
+
+                        <div className="max-h-56 overflow-y-auto px-3 py-3 space-y-2 bg-stone-50">
+                          {chatMessages.map((m, i) => (
+                            <div
+                              key={`${m.role}-${i}`}
+                              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                            >
+                              <div
+                                className={`max-w-[88%] rounded-2xl px-3 py-2 text-sm leading-snug ${
+                                  m.role === "user"
+                                    ? "bg-amber-400 text-stone-900"
+                                    : "bg-white border border-stone-200 text-stone-700"
+                                }`}
+                              >
+                                {m.text}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="p-3 border-t border-stone-100 flex gap-2">
+                          <input
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                void sendChat();
+                              }
+                            }}
+                            placeholder={`Ask ${name} about memories...`}
+                            className="flex-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-sm text-stone-800 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-amber-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void sendChat()}
+                            disabled={chatBusy || !chatInput.trim()}
+                            className="rounded-xl bg-amber-400 hover:bg-amber-300 disabled:bg-stone-200 disabled:text-stone-400 px-3 py-2 text-sm font-semibold text-stone-900 transition-colors"
+                          >
+                            {chatBusy ? "..." : "Send"}
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   )}
 
                   {/* ── Memories ──────────────────────────────────────────── */}
                   {tab === "memories" && (
-                    <div className="h-full overflow-y-auto p-5">
+                    <div className="h-full min-h-0 overflow-y-auto overscroll-contain p-5">
                       {liveMemories.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-40 gap-2 text-center">
                           <p className="text-stone-400 text-sm">No memories yet.</p>
@@ -423,7 +550,6 @@ export function CharacterDetail({
                         characterName={name}
                         currentImageUrl={liveImageUrl}
                         versionHistory={liveHistory}
-                        onEvolve={() => setEvolveStep("choose")}
                       />
                     </div>
                   )}

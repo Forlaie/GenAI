@@ -156,6 +156,19 @@ export default function App() {
     loadIslands();
   }, [router]);
 
+  useEffect(() => {
+    if (!selectedCharacter) return;
+    if (flyRafRef.current) {
+      cancelAnimationFrame(flyRafRef.current);
+      flyRafRef.current = null;
+    }
+    panStartRef.current = null;
+    islandDragRef.current = null;
+    setIsPanning(false);
+    setDraggingIslandId(null);
+    setArmedIslandId(null);
+  }, [selectedCharacter]);
+
   const flyTo = useCallback((worldX: number, worldY: number, targetZoom?: number) => {
     if (flyRafRef.current) cancelAnimationFrame(flyRafRef.current);
     const startPanX = panXRef.current;
@@ -192,6 +205,7 @@ export default function App() {
   }, []);
 
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
+    if (selectedCharacter) return;
     e.preventDefault();
     if (flyRafRef.current) { cancelAnimationFrame(flyRafRef.current); flyRafRef.current = null; }
     const next  = Math.min(Math.max(zoomRef.current - e.deltaY * ZOOM_SENSITIVITY, MIN_ZOOM), MAX_ZOOM);
@@ -201,7 +215,7 @@ export default function App() {
     setPanX((p) => mx + (p - mx) * ratio);
     setPanY((p) => my + (p - my) * ratio);
     setZoom(next);
-  }, []);
+  }, [selectedCharacter]);
 
   const handleCanvasPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (draggingIslandId !== null) return;
@@ -236,6 +250,7 @@ export default function App() {
     setArmedIslandId((p) => (p === id ? null : id));
 
   const handleIslandPointerDown = (e: React.PointerEvent<HTMLDivElement>, island: IslandData) => {
+    if (selectedCharacter) return;
     if (armedIslandId !== island.id && e.detail < 2) return;
     e.preventDefault(); e.stopPropagation();
     setArmedIslandId(island.id);
@@ -248,6 +263,7 @@ export default function App() {
   };
 
   const handleIslandPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (selectedCharacter) return;
     if (!islandDragRef.current) return;
     e.preventDefault(); e.stopPropagation();
     const d = islandDragRef.current;
@@ -261,6 +277,7 @@ export default function App() {
   };
 
   const handleIslandPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (selectedCharacter) return;
     if (!islandDragRef.current) return;
     e.preventDefault(); e.stopPropagation();
     if (e.currentTarget.hasPointerCapture(e.pointerId))

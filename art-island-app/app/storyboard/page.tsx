@@ -889,17 +889,22 @@ export default function StoryboardPage() {
                   No characters yet — create some on your island first.
                 </p>
               ) : (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                  {characters.map((character) => (
-                    <CharacterSelectCard
-                      key={character.id}
-                      character={character}
-                      selected={selectedCharacterIds.includes(character.id)}
-                      onToggle={() => toggleCharacter(character.id)}
-                      onAddMemory={handleAddMemory}
-                      onRemoveMemory={handleRemoveMemory}
-                    />
-                  ))}
+                <div
+                  className="overflow-y-auto overscroll-contain pr-1"
+                  style={{ maxHeight: "min(34rem, 65vh)" }}
+                >
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                    {characters.map((character) => (
+                      <CharacterSelectCard
+                        key={character.id}
+                        character={character}
+                        selected={selectedCharacterIds.includes(character.id)}
+                        onToggle={() => toggleCharacter(character.id)}
+                        onAddMemory={handleAddMemory}
+                        onRemoveMemory={handleRemoveMemory}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
 
