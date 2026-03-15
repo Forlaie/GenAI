@@ -89,7 +89,18 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="size-full relative overflow-hidden bg-white flex flex-col items-center justify-center">
+    <div
+      className="size-full relative overflow-hidden flex flex-col items-center justify-center"
+      style={{
+        backgroundImage: "url('/image.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
+    >
+      {/* Subtle overlay to keep text readable */}
+      <div className="absolute inset-0 bg-white/40" />
+
       {/* Stars background */}
       <div className="absolute inset-0 hidden">
         {stars.map((star) => (
@@ -107,67 +118,33 @@ export default function LandingPage() {
         ))}
       </div>
 
-      {/* Floating Islands */}
-      <div className="absolute inset-0 pointer-events-none hidden">
-        {islands.map((island) => (
-          <div
-            key={island.id}
-            className="absolute animate-bounce"
-            style={{
-              left: island.x + "%",
-              top: island.y + "%",
-              animationDelay: island.delay + "s",
-            }}
-          >
-            {/* Island shadow */}
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-2 bg-black/20 rounded-full blur-md" />
-
-            {/* Island body */}
-            <div
-              className={`relative w-${island.size} h-${Math.floor(island.size * 0.6)} bg-gradient-to-b ${island.color} rounded-full shadow-2xl`}
-              style={{
-                width: island.size + "px",
-                height: Math.floor(island.size * 0.6) + "px",
-                transform: `rotate(${island.rotation}deg)`,
-              }}
-            >
-              {/* Grass texture */}
-              <div className="absolute inset-0 rounded-full opacity-30">
-                <div className="absolute top-2 left-4 w-3 h-3 bg-green-300 rounded-full" />
-                <div className="absolute top-3 right-6 w-2 h-2 bg-green-300 rounded-full" />
-                <div className="absolute top-4 left-1/2 w-2 h-2 bg-green-300 rounded-full" />
-              </div>
-
-              {/* Trees/vegetation */}
-              <div className="absolute top-2 left-3 text-lg">🌲</div>
-              <div className="absolute top-1 right-4 text-lg">🌲</div>
-              {island.size > 100 && (
-                <>
-                  <div className="absolute top-2 left-1/2 text-lg">🌳</div>
-                  <div className="absolute bottom-6 right-6 text-base">🍄</div>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Content */}
       <div className="relative z-10 text-center mb-12">
-        <h1 className="text-5xl md:text-7xl font-bold text-black drop-shadow-lg">
-          Art Island
-        </h1>
-        <p className="text-gray-700 text-xl mt-3">
-          Where Your Drawings Come to Life ✨
-        </p>
+        <div
+          className="px-48 py-20 flex flex-col items-center gap-3"
+          style={{
+            backgroundImage: `url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 770 400" preserveAspectRatio="xMidYMid slice"><defs><filter id="shadow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/></filter></defs><path d="M 150 100 Q 100 80 80 120 Q 60 160 90 200 Q 70 220 100 240 Q 130 260 170 250 Q 200 240 210 280 Q 220 320 250 330 Q 280 335 300 310 Q 320 280 340 300 Q 360 320 380 310 Q 410 295 420 330 Q 430 350 460 340 Q 490 330 500 290 Q 510 250 530 260 Q 560 275 580 240 Q 600 200 620 220 Q 650 250 680 200 Q 700 160 680 120 Q 660 80 620 100 Q 580 110 560 80 Q 540 50 500 70 Q 470 85 450 60 Q 420 30 380 50 Q 350 70 330 40 Q 310 10 270 30 Q 240 45 220 20 Q 190 -10 150 100 Z" fill="white" stroke="black" stroke-width="8" filter="url(%23shadow)"/></svg>')`,
+            backgroundSize: "cover",
+            backgroundRepeat: "no-repeat",
+            backgroundPosition: "center",
+            minHeight: "500px",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+          }}
+        >
+          <h1 className="text-5xl md:text-7xl font-bold text-black drop-shadow-lg">
+            Ding Dong Doodle
+          </h1>
+          <p className="text-black text-xl mt-0">Draw. Dream. Discover.</p>
+          <button
+            onClick={() => router.push("/login")}
+            className="bg-black text-white font-bold mt-2 px-10 py-4 text-xl rounded hover:-translate-y-1 transition-transform"
+          >
+            Explore
+          </button>
+        </div>
       </div>
-
-      <button
-        onClick={() => router.push("/login")}
-        className="relative z-10 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold px-10 py-4 rounded-full text-xl shadow-lg hover:shadow-pink-500/40 hover:scale-105 transition-all"
-      >
-        Visit the Islands 🏝️
-      </button>
     </div>
   );
 }

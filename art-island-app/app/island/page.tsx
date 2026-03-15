@@ -207,62 +207,51 @@ export default function App() {
     const placedPositions: Array<{ x: number; y: number }> = [];
     const minDistance = (CHARACTER_FOOTPRINT_PX / island.size) * 100;
 
-    // Position characters ONLY on the green top part
+    // Green area boundaries
     const greenTopStart = 10;
     const greenTopEnd = 45;
     const greenLeft = 15;
     const greenRight = 85;
+    const greenWidth = greenRight - greenLeft;
+    const greenHeight = greenTopEnd - greenTopStart;
 
     return islandCharacters.map((character, index) => {
-      // First character centered on green
-      if (index === 0) {
-        const centered = {
+      // Spread characters evenly across the green area
+      const cols = Math.ceil(Math.sqrt(islandCharacters.length));
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+
+      // Base position spread across green area
+      const x = greenLeft + (greenWidth * (col + 0.5)) / cols;
+      const y = greenTopStart + (greenHeight * (row + 0.5)) / cols;
+
+      const candidate = { x, y };
+
+      // Try collision detection
+      const isColliding = placedPositions.some((position) => {
+        const dx = position.x - candidate.x;
+        const dy = position.y - candidate.y;
+        return Math.sqrt(dx * dx + dy * dy) < minDistance;
+      });
+
+      if (!isColliding) {
+        placedPositions.push(candidate);
+        return {
           ...character,
-          position: { x: 50, y: 22 },
+          position: candidate,
         };
-        placedPositions.push(centered.position);
-        return centered;
       }
 
-      // Try to find a valid position on the green area
-      for (let attempt = 0; attempt < 240; attempt++) {
-        const angle = (index + attempt * 0.618) * Math.PI * 2;
-        const radius = (attempt / 240) * 25; // Spiral outward
-
-        const candidate = {
-          x: 50 + Math.cos(angle) * radius,
-          y: 22 + Math.sin(angle) * radius * 0.6, // More horizontal spread
-        };
-
-        // Strictly constrain to green area
-        candidate.x = Math.max(greenLeft, Math.min(greenRight, candidate.x));
-        candidate.y = Math.max(
-          greenTopStart,
-          Math.min(greenTopEnd, candidate.y)
-        );
-
-        const isColliding = placedPositions.some((position) => {
-          const dx = position.x - candidate.x;
-          const dy = position.y - candidate.y;
-          return Math.sqrt(dx * dx + dy * dy) < minDistance;
-        });
-
-        if (!isColliding) {
-          placedPositions.push(candidate);
-          return {
-            ...character,
-            position: candidate,
-          };
-        }
-      }
-
-      // Fallback: linear spread across green area
+      // Fallback with slight offset
       const fallback = {
-        x:
-          greenLeft +
-          (greenRight - greenLeft) *
-            (index / Math.max(islandCharacters.length, 1)),
-        y: 22,
+        x: Math.max(
+          greenLeft,
+          Math.min(greenRight, candidate.x + (Math.random() - 0.5) * 15),
+        ),
+        y: Math.max(
+          greenTopStart,
+          Math.min(greenTopEnd, candidate.y + (Math.random() - 0.5) * 10),
+        ),
       };
       placedPositions.push(fallback);
       return {
@@ -436,7 +425,10 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="size-full flex items-center justify-center bg-white">
+      <div
+        className="size-full flex items-center justify-center"
+        style={{ backgroundColor: "#e8f9ff" }}
+      >
         <div className="text-2xl text-gray-500">Loading islands...</div>
       </div>
     );
@@ -444,9 +436,8 @@ export default function App() {
 
   return (
     <div
-      className={`size-full touch-none select-none relative overflow-hidden bg-white ${
-        isPanning ? "cursor-grabbing" : "cursor-grab"
-      }`}
+      className={`size-full touch-none select-none relative overflow-hidden ${isPanning ? "cursor-grabbing" : "cursor-grab"}`}
+      style={{ backgroundColor: "#e8f9ff" }}
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
@@ -544,10 +535,10 @@ export default function App() {
       {/* Title */}
       <div className="fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 text-center z-10 px-4">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-medium text-gray-800">
-          Art Island
+          Ding Dong Doodle
         </h1>
         <p className="text-gray-400 text-xs sm:text-sm mt-1">
-          Where your drawings come to life
+          Draw. Dream. Discover.
         </p>
       </div>
 
