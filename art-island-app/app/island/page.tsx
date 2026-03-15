@@ -386,7 +386,10 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="size-full flex items-center justify-center bg-white">
+      <div
+        className="size-full flex items-center justify-center"
+        style={{ backgroundColor: "#e8f9ff" }}
+      >
         <div className="text-2xl text-gray-500">Loading islands...</div>
       </div>
     );
@@ -394,7 +397,8 @@ export default function App() {
 
   return (
     <div
-      className={`size-full touch-none select-none relative overflow-hidden bg-white ${isPanning ? "cursor-grabbing" : "cursor-grab"}`}
+      className={`size-full touch-none select-none relative overflow-hidden ${isPanning ? "cursor-grabbing" : "cursor-grab"}`}
+      style={{ backgroundColor: "#e8f9ff" }}
       onPointerDown={handleCanvasPointerDown}
       onPointerMove={handleCanvasPointerMove}
       onPointerUp={handleCanvasPointerUp}
