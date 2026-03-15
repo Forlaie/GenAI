@@ -8,12 +8,12 @@ interface TutorialOverlayProps {
 export function TutorialOverlay({ step, onDismiss }: TutorialOverlayProps) {
   const messages: Record<string, { title: string; description: string }> = {
     "create-island": {
-      title: "Welcome to Art Island! 🍁",
+      title: "Welcome to Ding Dong Doodle!",
       description:
-        "Your island modal is ready! Create 'Toronto' with a pink color. The name and color are already set for you.",
+        "Your island modal is ready! Try creating a 'Toronto' island.",
     },
     "draw-maple": {
-      title: "Draw a Goose! 🦆",
+      title: "Draw a Goose!",
       description:
         "Great! Now let's draw a character! Click 'Add Drawing' and draw a goose on the canvas. Be creative!",
     },
@@ -38,7 +38,7 @@ export function TutorialOverlay({ step, onDismiss }: TutorialOverlayProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.8, y: 50 }}
             transition={{ type: "spring", damping: 25 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-2xl shadow-2xl p-8 w-md h-60 flex flex-col justify-between mx-4"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-2xl shadow-2xl p-8 w-md flex flex-col justify-between mx-4"
           >
             <h2 className="text-3xl font-bold text-gray-800 mb-2">
               {messages[step].title}
@@ -48,7 +48,7 @@ export function TutorialOverlay({ step, onDismiss }: TutorialOverlayProps) {
             </p>
             <button
               onClick={onDismiss}
-              className="w-full bg-linear-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all shadow-lg hover:shadow-xl whitespace-nowrap"
+              className="w-full bg-black text-white font-bold py-3 rounded transition-all shadow-lg hover:shadow-xl whitespace-nowrap"
             >
               Got it!
             </button>
