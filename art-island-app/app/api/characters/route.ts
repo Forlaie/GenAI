@@ -11,6 +11,8 @@ const characterSchema = new mongoose.Schema({
   imageUrl: String,
   position: { x: Number, y: Number },
   islandId: Number,
+  joints: { type: mongoose.Schema.Types.Mixed, default: null }, // ← add
+  riggedAt: { type: Date, default: null }, // ← add
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -18,7 +20,7 @@ const Character =
   mongoose.models.Character || mongoose.model("Character", characterSchema);
 
 const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "fallback-secret-change-me",
+  process.env.JWT_SECRET || "fallback-secret-change-me"
 );
 
 async function getUserId(): Promise<string | null> {
@@ -50,13 +52,13 @@ export async function GET() {
         age: char.age,
         position: char.position,
         islandId: char.islandId,
-      })),
+      }))
     );
   } catch (error) {
     console.error("GET error:", error);
     return NextResponse.json(
       { error: "Failed to load characters" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -77,6 +79,7 @@ export async function POST(request: Request) {
       imageUrl: body.imageUrl,
       position: body.position,
       islandId: body.islandId,
+      joints: body.joints ?? null,
     });
 
     return NextResponse.json({
@@ -91,7 +94,7 @@ export async function POST(request: Request) {
     console.error("POST error:", error);
     return NextResponse.json(
       { error: "Failed to save character" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

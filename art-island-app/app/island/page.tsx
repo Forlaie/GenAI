@@ -12,8 +12,10 @@ import { ChooseInputModal } from "../components/ChooseInputModal";
 import { DrawingCanvas } from "../components/DrawingCanvas";
 import { TutorialOverlay } from "../components/TutorialOverlay";
 import { Minimap } from "../components/Minimap";
+import JointEditor from "@/app/components/JointEditor";
+import Link from "next/link";
 
-type ModalState = "none" | "choose" | "draw" | "upload";
+type ModalState = "none" | "choose" | "draw" | "upload" | "rig";
 type TutorialStep = "create-island" | "draw-maple" | "none";
 
 interface CharacterData {
@@ -56,6 +58,12 @@ export default function App() {
   const [panY, setPanY] = useState(0);
   const [isPanning, setIsPanning] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [pendingCharacter, setPendingCharacter] = useState<{
+    imageFile: File | null;
+    name: string;
+    age: number;
+    islandId: number;
+  } | null>(null);
 
   useEffect(() => {
     loadCharacters();
@@ -95,7 +103,7 @@ export default function App() {
       setNextIslandId(
         normalizedIslands.length > 0
           ? Math.max(...normalizedIslands.map((i: any) => i.id)) + 1
-          : 1,
+          : 1
       );
 
       if (normalizedIslands.length === 0) {
@@ -120,7 +128,7 @@ export default function App() {
   const handleAddIsland = async (
     name: string,
     color: string,
-    border: string,
+    border: string
   ) => {
     try {
       const newIsland: IslandData = {
@@ -194,7 +202,7 @@ export default function App() {
     if (!island) return [] as CharacterData[];
 
     const islandCharacters = characters.filter(
-      (char) => char.islandId === islandId,
+      (char) => char.islandId === islandId
     );
     const placedPositions: Array<{ x: number; y: number }> = [];
     const minDistance = (CHARACTER_FOOTPRINT_PX / island.size) * 100;
@@ -278,8 +286,22 @@ export default function App() {
     imageFile: File | null,
     name: string,
     age: number,
-    islandId: number,
+    islandId: number
   ) => {
+    console.log("handleAddCharacter called", { name, age, islandId });
+    setPendingCharacter({ imageFile, name, age, islandId });
+    setModalState("rig");
+  };
+
+  const handleRigConfirm = async (
+    joints: Record<string, { x: number; y: number }>
+  ) => {
+    console.log("handleRigConfirm called");
+    console.log("pendingCharacter:", pendingCharacter);
+    console.log("pendingDrawing:", pendingDrawing);
+    if (!pendingCharacter) return;
+    const { imageFile, name, age, islandId } = pendingCharacter;
+
     try {
       const position = getCharacterPosition(islandId);
 
@@ -296,13 +318,21 @@ export default function App() {
       const res = await fetch("/api/characters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, age, imageUrl, position, islandId }),
+        body: JSON.stringify({
+          name,
+          age,
+          imageUrl,
+          position,
+          islandId,
+          joints,
+        }),
       });
 
       if (!res.ok) throw new Error("Failed to save");
       const newCharacter = await res.json();
       setCharacters((prev) => [...prev, newCharacter]);
       setPendingDrawing(null);
+      setPendingCharacter(null);
       setModalState("none");
     } catch (error) {
       console.error("Error adding character:", error);
@@ -336,12 +366,21 @@ export default function App() {
   };
 
   const handleCanvasPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (modalState === "draw" || modalState === "upload" || selectedCharacter) {
+    if (
+      modalState === "draw" ||
+      modalState === "upload" ||
+      modalState === "rig" ||
+      selectedCharacter
+    ) {
       return;
     }
 
     const target = e.target as HTMLElement;
-    if (target.closest("[data-no-pan='true']") || target.closest("button")) {
+    if (
+      target.closest("[data-no-pan='true']") ||
+      target.closest("button") ||
+      target.closest("a")
+    ) {
       return;
     }
 
@@ -416,7 +455,7 @@ export default function App() {
         {islands.map((planet, index) => {
           const displayPosition = getIslandDisplayPosition(
             index,
-            islands.length,
+            islands.length
           );
 
           return (
@@ -474,6 +513,14 @@ export default function App() {
           <span className="hidden sm:inline">New Island</span>
           <span className="sm:hidden">Island</span>
         </button>
+
+        <Link
+          href="/rig"
+          className="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all flex items-center gap-2 text-sm sm:text-base"
+        >
+          <span className="hidden sm:inline">Rig Character</span>
+          <span className="sm:hidden">Rig</span>
+        </Link>
       </div>
 
       {/* Logout */}
@@ -553,6 +600,51 @@ export default function App() {
             previewImageUrl={pendingDrawing ?? undefined}
             islands={islands}
           />
+        )}
+
+        {modalState === "rig" && pendingCharacter && (
+          <motion.div
+            key="rig"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4"
+          >
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl overflow-hidden">
+              <div className="px-6 py-4 border-b flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-medium text-gray-800">
+                    Place joints
+                  </h2>
+                  <p className="text-sm text-gray-400 mt-0.5">
+                    Click to place each joint on{" "}
+                    <span className="font-medium text-gray-600">
+                      {pendingCharacter.name}
+                    </span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setPendingCharacter(null);
+                    setModalState("upload");
+                  }}
+                  className="text-sm text-gray-400 hover:text-gray-600"
+                >
+                  ← Back
+                </button>
+              </div>
+              <div className="p-4">
+                <JointEditor
+                  imageUrl={pendingDrawing ?? ""}
+                  onConfirm={handleRigConfirm}
+                  onBack={() => {
+                    setPendingCharacter(null);
+                    setModalState("upload");
+                  }}
+                />
+              </div>
+            </div>
+          </motion.div>
         )}
 
         {showNewIslandModal && (
