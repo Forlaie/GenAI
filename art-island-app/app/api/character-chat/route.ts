@@ -27,6 +27,11 @@ type CohereMessagePart = {
   text?: string;
 };
 
+type StructuredChat = {
+  reply: string;
+  memoryCandidate: string;
+};
+
 function extractCohereText(data: unknown): string {
   if (!data || typeof data !== "object") return "";
   const record = data as Record<string, unknown>;
@@ -53,6 +58,45 @@ function extractCohereText(data: unknown): string {
   }
 
   return "";
+}
+
+function parseStructuredChat(text: string): StructuredChat {
+  const trimmed = text.trim();
+  if (!trimmed) return { reply: "", memoryCandidate: "" };
+
+  const tryParse = (candidate: string): StructuredChat | null => {
+    try {
+      const parsed = JSON.parse(candidate) as { reply?: unknown; memoryCandidate?: unknown };
+      const reply = typeof parsed.reply === "string" ? parsed.reply.trim() : "";
+      const memoryCandidate =
+        typeof parsed.memoryCandidate === "string" ? parsed.memoryCandidate.trim() : "";
+      if (!reply) return null;
+      return {
+        reply,
+        memoryCandidate: memoryCandidate.slice(0, 220),
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  const direct = tryParse(trimmed);
+  if (direct) return direct;
+
+  const codeBlock = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
+  if (codeBlock) {
+    const parsed = tryParse(codeBlock.trim());
+    if (parsed) return parsed;
+  }
+
+  const braceStart = trimmed.indexOf("{");
+  const braceEnd = trimmed.lastIndexOf("}");
+  if (braceStart !== -1 && braceEnd > braceStart) {
+    const parsed = tryParse(trimmed.slice(braceStart, braceEnd + 1));
+    if (parsed) return parsed;
+  }
+
+  return { reply: trimmed, memoryCandidate: "" };
 }
 
 export async function POST(request: Request) {
@@ -106,7 +150,7 @@ Character profile:
       .map((m) => `${m.role === "user" ? "User" : character.name}: ${m.text}`)
       .join("\n");
 
-    const userPrompt = `${systemPrompt}\n\nConversation so far:\n${transcript}\n\nRespond as ${character.name}.`;
+    const userPrompt = `${systemPrompt}\n\nConversation so far:\n${transcript}\n\nReturn ONLY valid JSON with keys "reply" and "memoryCandidate".\nRules:\n- reply: respond as ${character.name} in 1-3 short sentences.\n- memoryCandidate: empty string unless the user's latest message contains a meaningful personal detail, preference, fear, goal, or important event.\n- If present, memoryCandidate must be one short memory sentence from ${character.name}'s perspective.\n- No markdown, no extra keys.`;
 
     const cohereResponse = await fetch("https://api.cohere.com/v2/chat", {
       method: "POST",
@@ -129,16 +173,20 @@ Character profile:
     }
 
     const data = await cohereResponse.json();
-    const reply = extractCohereText(data);
+    const raw = extractCohereText(data);
+    const structured = parseStructuredChat(raw);
 
-    if (!reply) {
+    if (!structured.reply) {
       return NextResponse.json(
         { error: "No chat reply returned by model" },
         { status: 502 }
       );
     }
 
-    return NextResponse.json({ reply });
+    return NextResponse.json({
+      reply: structured.reply,
+      memoryCandidate: structured.memoryCandidate,
+    });
   } catch (error) {
     console.error("POST /api/character-chat error:", error);
     return NextResponse.json({ error: "Failed to chat with character" }, { status: 500 });

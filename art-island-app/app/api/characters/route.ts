@@ -193,6 +193,7 @@ export async function POST(request: Request) {
 //
 //  { action: "add",    characterId, memory: { id, text } }
 //  { action: "remove", characterId, memoryId }
+//  { action: "mature-story", characterId, memoryText?, personalityDelta? }
 //  { action: "evolve", characterId, imageUrl, joints, personality?, memoryText? }
 
 export async function PATCH(request: Request) {
@@ -236,6 +237,63 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: "Invalid animationPreference" }, { status: 400 });
       }
       char.animationPreference = mode;
+
+    // ── mature from story interaction ────────────────────────────────────────
+    } else if (action === "mature-story") {
+      const memoryText = typeof body.memoryText === "string" ? body.memoryText.trim() : "";
+      const personalityDelta =
+        body.personalityDelta && typeof body.personalityDelta === "object"
+          ? (body.personalityDelta as {
+              catchphrase?: string;
+              traits?: string[];
+              dailyActivity?: string;
+              favoriteThing?: string;
+            })
+          : {};
+
+      if (memoryText) {
+        char.memories.push({
+          id: crypto.randomUUID(),
+          text: memoryText,
+          createdAt: new Date(),
+        });
+      }
+
+      const hasPersonalityDelta =
+        !!personalityDelta.catchphrase ||
+        !!personalityDelta.dailyActivity ||
+        !!personalityDelta.favoriteThing ||
+        (Array.isArray(personalityDelta.traits) && personalityDelta.traits.length > 0);
+
+      if (hasPersonalityDelta) {
+        const current = (char.personality as {
+          catchphrase?: string;
+          traits?: string[];
+          dailyActivity?: string;
+          favoriteThing?: string;
+        } | null) ?? { catchphrase: "", traits: [], dailyActivity: "", favoriteThing: "" };
+
+        const nextCatchphrase = String(personalityDelta.catchphrase || "").trim();
+        const nextDailyActivity = String(personalityDelta.dailyActivity || "").trim();
+        const nextFavoriteThing = String(personalityDelta.favoriteThing || "").trim();
+        const nextTraits = Array.isArray(personalityDelta.traits)
+          ? personalityDelta.traits
+              .filter((t): t is string => typeof t === "string")
+              .map((t) => t.trim())
+              .filter(Boolean)
+          : [];
+
+        char.personality = {
+          catchphrase: nextCatchphrase || current.catchphrase || "",
+          traits: Array.from(new Set([...(current.traits ?? []), ...nextTraits])),
+          dailyActivity: [current.dailyActivity, nextDailyActivity]
+            .filter((v) => typeof v === "string" && v.trim())
+            .join(" | "),
+          favoriteThing: [current.favoriteThing, nextFavoriteThing]
+            .filter((v) => typeof v === "string" && v.trim())
+            .join(" | "),
+        };
+      }
 
     // ── evolve ───────────────────────────────────────────────────────────────
     } else if (action === "evolve") {

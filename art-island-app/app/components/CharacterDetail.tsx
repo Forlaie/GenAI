@@ -179,6 +179,29 @@ export function CharacterDetail({
       if (!reply) throw new Error("Character had no response.");
 
       setChatMessages((prev) => [...prev, { role: "assistant", text: reply }]);
+
+      const memoryCandidate = String(payload?.memoryCandidate || "").trim();
+      if (memoryCandidate.length > 0) {
+        const memoryRes = await fetch("/api/characters", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "add",
+            characterId: id,
+            memory: {
+              id: crypto.randomUUID(),
+              text: memoryCandidate,
+            },
+          }),
+        });
+
+        if (memoryRes.ok) {
+          const updated = await memoryRes.json();
+          if (Array.isArray(updated?.memories)) {
+            setLiveMemories(updated.memories as Memory[]);
+          }
+        }
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Chat failed.";
       setChatMessages((prev) => [
