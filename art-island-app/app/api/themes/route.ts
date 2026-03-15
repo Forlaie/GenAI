@@ -64,7 +64,7 @@ export async function GET() {
 
 // ─── POST — create a new custom theme ────────────────────────────────────────
 
-export async function POST(request) {
+export async function POST(request: Request) {
   try {
     const userId = await getUserId();
     if (!userId)
@@ -99,7 +99,7 @@ export async function POST(request) {
 // ─── DELETE — remove a custom theme by id ─────────────────────────────────────
 //  URL: /api/themes?id=<themeId>
 
-export async function DELETE(request) {
+export async function DELETE(request: Request) {
   try {
     const userId = await getUserId();
     if (!userId)
