@@ -46,12 +46,12 @@ export default function LoginPage() {
       {/* Back button - top left */}
       <button
         onClick={() => router.push("/")}
-        className="absolute top-4 left-4 bg-white border border-gray-200 shadow-sm text-gray-600 hover:text-gray-900 text-sm flex items-center gap-1 px-3 py-2 rounded-lg hover:-translate-y-0.5 transition-all"
+        className="absolute top-4 left-4 bg-white border border-gray-200 shadow-sm text-gray-600 hover:text-gray-900 text-sm flex items-center gap-1 px-3 py-2 rounded hover:-translate-y-0.5 transition-all"
       >
         ← Back
       </button>
 
-      <div className="relative z-10 bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-sm shadow-lg">
+      <div className="relative z-10 bg-white border border-gray-200 rounded p-8 w-full max-w-sm shadow-lg">
         <h2 className="text-3xl font-bold text-black text-center mb-2">
           {isSignup ? "Create Account" : "Welcome Back"}
         </h2>
@@ -67,7 +67,7 @@ export default function LoginPage() {
             placeholder="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-colors"
+            className="w-full px-4 py-3 rounded bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-colors"
             required
           />
           <input
@@ -75,7 +75,7 @@ export default function LoginPage() {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-colors"
+            className="w-full px-4 py-3 rounded bg-gray-50 border border-gray-300 text-black placeholder-gray-400 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100 transition-colors"
             required
           />
 
@@ -84,7 +84,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all disabled:opacity-50"
+            className="w-full bg-black text-white font-bold py-3 rounded transition-all disabled:opacity-50"
           >
             {loading ? "Loading..." : isSignup ? "Sign Up" : "Log In"}
           </button>
@@ -99,7 +99,7 @@ export default function LoginPage() {
               setUsername("");
               setPassword("");
             }}
-            className="text-purple-600 hover:text-purple-700 ml-1 font-medium"
+            className="text-black-600 hover:underline ml-1 font-medium "
           >
             {isSignup ? "Log In" : "Sign Up"}
           </button>
@@ -107,7 +107,7 @@ export default function LoginPage() {
       </div>
 
       {/* Duck at the bottom of the screen */}
-      <div className="absolute bottom-0 flex items-end justify-center gap-4 w-full">
+      <div className="absolute bottom-0 flex items-end justify-center gap-8 w-full">
         <Image
           src="/duck.png"
           alt="Duck"
