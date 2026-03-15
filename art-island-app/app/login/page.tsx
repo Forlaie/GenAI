@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -49,6 +50,7 @@ export default function LoginPage() {
       >
         ← Back
       </button>
+
       <div className="relative z-10 bg-white border border-gray-200 rounded-2xl p-8 w-full max-w-sm shadow-lg">
         <h2 className="text-3xl font-bold text-black text-center mb-2">
           {isSignup ? "Create Account" : "Welcome Back"}
@@ -102,6 +104,52 @@ export default function LoginPage() {
             {isSignup ? "Log In" : "Sign Up"}
           </button>
         </p>
+      </div>
+
+      {/* Duck at the bottom of the screen */}
+      <div className="absolute bottom-0 flex items-end justify-center gap-4 w-full">
+        <Image
+          src="/duck.png"
+          alt="Duck"
+          width={120}
+          height={120}
+          className="object-contain"
+        />
+        <Image
+          src="/shark.png"
+          alt="Shark"
+          width={120}
+          height={120}
+          className="object-contain"
+        />
+        <Image
+          src="/cat.png"
+          alt="Cat"
+          width={120}
+          height={120}
+          className="object-contain"
+        />
+        <Image
+          src="/orca.png"
+          alt="Orca"
+          width={120}
+          height={120}
+          className="object-contain"
+        />
+        <Image
+          src="/cow.png"
+          alt="Cow"
+          width={200}
+          height={200}
+          className="object-contain translate-y-7"
+        />
+        <Image
+          src="/octopus.png"
+          alt="Octopus"
+          width={120}
+          height={120}
+          className="object-contain"
+        />
       </div>
     </div>
   );
