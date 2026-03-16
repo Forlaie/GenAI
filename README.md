@@ -65,4 +65,4 @@ Plan API endpoints in depth before splitting into frontend and backend teams. Sl
 
 ## 📄 License
 
-MIT
+[MIT](LICENSE.md)
