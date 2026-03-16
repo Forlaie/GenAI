@@ -65,4 +65,4 @@ Plan API endpoints in depth before splitting into frontend and backend teams. Sl
 
 ## 📄 License
 
-[MIT](LICENSE.md)
+This project is open source and available under the [MIT License](LICENSE).
